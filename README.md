@@ -4,7 +4,7 @@
 
 ### What if your database was already sitting in GitHub?
 
-GiaDB (GitHub Issues As Database) is a small database abstraction that uses a GitHub repository as a database and issues as resources.
+GiaDB (GitHub Issues As Database) is a lightweight database abstraction that uses GitHub Issues for storage and the GitHub API for access and queries.
 
 <br clear="left">
 
@@ -29,7 +29,7 @@ Yet even a small database usually means provisioning storage, managing backups, 
 
 ## How it works
 
-The repository is simply where the database lives. **The database itself is built on GitHub's Issues feature—not on Git, commits, or repository files.**
+A repository only scopes the database. **Resources are stored in GitHub Issues and accessed through GitHub APIs—not through Git, commits, or repository files.**
 
 | GitHub | GiaDB |
 |---|---|
