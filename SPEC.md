@@ -157,9 +157,9 @@ as conflict prevention.
 Independent comment creation is preferred for concurrent append workloads.
 The resource returned by a successful mutation is authoritative.
 
-An implementation MUST NOT blindly retry a mutation after a transport failure
-that may have occurred after GitHub accepted it. Such a failure is
-`outcome_unknown`. Safe reads MAY be retried.
+A mutation transport failure that may have occurred after GitHub accepted the
+request MUST produce `outcome_unknown`. It MUST NOT be represented as
+`not_applied`.
 
 ## 8. Errors
 
@@ -182,23 +182,40 @@ Rate-limit errors SHOULD include retry time, limit, remaining requests, reset
 time, HTTP status, and GitHub request ID when available. Failed requests MUST
 NOT be converted into empty resources or complete empty pages.
 
-## 9. API behavior and resilience
+## 9. SDK implementation boundary
 
 REST clients MUST send `Accept: application/vnd.github+json` and pin
 `X-GitHub-Api-Version: 2026-03-10`. GraphQL clients MUST inspect both HTTP
 status and GraphQL errors.
 
-Clients MUST use bounded concurrency. They SHOULD serialize and pace
-content-generating mutations. On primary or secondary throttling they MUST
-honor `Retry-After`, then `X-RateLimit-Reset`; otherwise they SHOULD use bounded
-exponential backoff with jitter according to GitHub guidance.
+A GiaDB SDK MUST provide a thin interface over GitHub APIs. It MUST implement
+the resource, section, lifecycle, listing, pagination, and reserved-label
+semantics defined by this specification.
 
-Automatic retries MUST be context-aware and bounded. v0.1 automatically
-retries only safe reads. Conditional GET with `ETag`/`If-None-Match` SHOULD be
-supported. A `304` without cached content is an explicit `not_modified` result,
+The core SDK MUST NOT automatically retry, delay, queue, throttle, pace, or
+serialize requests. It MUST NOT impose a caller concurrency limit. This applies
+to both reads and mutations.
+
+When GitHub rejects or throttles a request, the SDK MUST return a structured
+error instead of waiting or retrying. The error SHOULD expose the HTTP status,
+GitHub request ID, `Retry-After`, `X-RateLimit-Remaining`, and
+`X-RateLimit-Reset` values when available. The caller decides whether and when
+to retry.
+
+Pagination MUST be explicit. A paginated operation returns one page and an
+opaque continuation token. The SDK MUST NOT automatically load every page.
+
+An operation MAY perform an additional GitHub read when required to verify
+that the target Issue is a valid GiaDB resource before mutation. Such a read is
+a correctness check, not caching or synchronization.
+
+Conditional requests MAY be supported when explicitly requested by the
+caller. A `304` without cached content is an explicit `not_modified` result,
 not an empty successful resource.
 
-Any cache is optional and disposable and MUST NOT be required for correctness.
+No cache is required. If an implementation offers caching outside the core
+SDK, that cache MUST be optional and disposable and MUST NOT become a source of
+truth.
 
 ## 10. SDK contract
 

@@ -175,14 +175,8 @@ def evaluate(scenario: dict[str, Any]) -> dict[str, Any]:
     if scenario_id == "lifecycle.reopen":
         return {"state": "active"}
 
-    if scenario_id == "throttle.retry_after_precedence":
-        return {"retry_after_seconds": value["retry_after_seconds"]}
-
     if scenario_id == "mutation.ambiguous_transport_failure":
         return {"error": "outcome_unknown", "retried": False}
-
-    if scenario_id == "conditional.not_modified":
-        return {"error": "not_modified"}
 
     raise AssertionError(f"scenario has no executable evaluator: {scenario_id}")
 
