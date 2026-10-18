@@ -1,10 +1,12 @@
-<img src="assets/gia-db-black.png" alt="GiaDB logo" width="180">
-
 # GiaDB
+
+<img src="assets/gia-db-black.png" alt="GiaDB logo" width="180" align="right">
 
 ### What if your database was already sitting in GitHub?
 
-**GiaDB — GitHub Issues As Database** — is a specification for building lightweight databases using GitHub Issues and the GitHub API.
+GiaDB (GitHub Issues As Database) is a small database abstraction that uses a GitHub repository as a database and issues as resources.
+
+<br clear="right">
 
 No database server. No `git clone`. No commits, branches, or local storage to manage.
 
