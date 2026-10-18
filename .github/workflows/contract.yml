@@ -1,0 +1,38 @@
+name: Contract
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: tools/requirements.txt
+      - name: Install contract validator
+        run: python -m pip install -r tools/requirements.txt
+      - name: Parse contract JSON
+        run: python -m json.tool contract/v0.1/manifest.json >/dev/null && for file in contract/v0.1/*.json; do python -m json.tool "$file" >/dev/null; done
+      - name: Verify manifest checksums
+        working-directory: contract/v0.1
+        run: |
+          python - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+
+          manifest = json.loads(Path("manifest.json").read_text())
+          for entry in manifest["files"]:
+              actual = hashlib.sha256(Path(entry["path"]).read_bytes()).hexdigest()
+              assert actual == entry["sha256"], (entry["path"], actual)
+          PY
+      - name: Validate schemas, examples, and conformance
+        run: python tools/validate_contract.py
