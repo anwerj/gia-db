@@ -1,3 +1,5 @@
+<img src="assets/gia-db-black.png" alt="GiaDB logo" width="180">
+
 # GiaDB
 
 ### What if your database was already sitting in GitHub?
