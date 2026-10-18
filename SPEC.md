@@ -1,17 +1,22 @@
-# GIADB Specification v0.1
+# GiaDB Specification v0.1
 
 Status: implementation contract.
 
 The key words MUST, MUST NOT, SHOULD, SHOULD NOT, and MAY are normative.
 
+The project name MUST be written exactly as `GiaDB` in prose, documentation,
+and user-facing text. No alternative capitalization may be used as the project
+name. Existing repository, package, label, and machine identifiers such as
+`gia-db`, `gia-go`, and `gia/` retain their defined forms.
+
 ## 1. Scope
 
-GIADB uses one configured GitHub repository as one database. GitHub is the
+GiaDB uses one configured GitHub repository as one database. GitHub is the
 source of truth. An implementation MUST use GitHub application APIs and MUST
 NOT require Git operations, a checkout, filesystem persistence, a cache, a
 search index, a background worker, or MCP.
 
-GIADB targets small collections, normally hundreds to a few thousand
+GiaDB targets small collections, normally hundreds to a few thousand
 resources. It does not provide SQL, joins, transactions, arbitrary indexes, or
 high-throughput storage.
 
@@ -22,7 +27,7 @@ name. A resource identifier is the positive issue number scoped to that
 database. GitHub database IDs and GraphQL node IDs are adapter details and MUST
 NOT replace the issue number in the public contract.
 
-| GitHub | GIADB |
+| GitHub | GiaDB |
 |---|---|
 | Repository | Database |
 | Issue | Resource |
@@ -50,7 +55,7 @@ gia/table/<name>
 uppercase, malformed, or duplicate table classification before mutation.
 
 An issue with no table label is an ordinary issue and MUST be omitted from
-GIADB enumeration and search results. An issue with more than one distinct
+GiaDB enumeration and search results. An issue with more than one distinct
 table label is malformed and MUST produce `invalid_resource`; it MUST NOT be
 silently selected as one table.
 
@@ -128,7 +133,7 @@ isolation while GitHub changes.
 
 ## 7. Consistency and concurrency
 
-GIADB does not provide transactions or atomic multi-resource operations.
+GiaDB does not provide transactions or atomic multi-resource operations.
 GitHub issue update endpoints do not offer a portable atomic expected-version
 precondition. Shared mutable fields therefore use last-write-wins behavior.
 Comparing `updated_at` before a mutation is advisory and MUST NOT be described

@@ -1,47 +1,33 @@
-# GIADB implementation rules
+# GiaDB contributor instructions
 
-This file applies to the specification, conformance contract, and SDK work
-derived from this repository.
+This file governs how agents and contributors change the specification,
+contract pack, and derived SDKs. It does not define GiaDB semantics.
 
-## MUST
+## Naming
 
-- Treat `SPEC.md` and the versioned contract pack as normative.
-- Treat GitHub as the only source of truth.
-- Identify resources by repository-scoped issue number.
-- require exactly one valid `gia/table/<name>` label on every resource.
-- Preserve labels that a mutation does not explicitly replace.
-- Exclude pull requests and ordinary issues from resource results.
-- Keep body and comment/section reads distinct.
-- Mark every paged result as continued or exhausted.
-- Keep `List` as the only resource collection/query operation.
-- Expose truncation and incomplete results when `List` uses GitHub search.
-- Return structured, stable error codes.
-- Honor GitHub throttling headers and bound retries and concurrency.
-- Validate GitHub's returned representation after each mutation.
-- Keep public SDK contracts independent of MCP and GitHub client libraries.
-- Add or update conformance scenarios when semantics change.
+- The project name MUST be written exactly as `GiaDB`.
+- No alternative capitalization may be used as the project name.
+- Existing repository, package, label, and machine identifiers such as
+  `gia-db`, `gia-go`, and `gia/` MUST retain their defined forms.
 
-## SHOULD
+## Sources of truth
 
-- Prefer GitHub-native REST and GraphQL capabilities.
-- Prefer append-oriented comments for concurrent additions.
-- Pace content-generating mutations.
-- Retry safe reads only.
-- Support caller-provided HTTP clients and test endpoints.
-- Keep optional caches disposable.
-- Pin API versions and SDK dependencies.
+- `SPEC.md` is the sole normative source for GiaDB semantics.
+- `contract/v0.1` is the machine-readable expression of `SPEC.md`; it MUST NOT
+  add, remove, or reinterpret requirements.
+- `README.md` is explanatory and non-normative. It MUST NOT override
+  `SPEC.md`.
+- If these files disagree, contributors MUST correct the contract or
+  explanatory material to match `SPEC.md`; they MUST NOT create a second
+  semantic rule here.
 
-## MUST NOT
+## Changing GiaDB
 
-- Use Git operations, clones, worktrees, or repository files as database
-  persistence.
-- Add a required local database, cache, index, worker, or sync engine.
-- Treat a pull request as a resource.
-- Pick one of multiple table labels silently.
-- Concatenate, split, or truncate comments automatically.
-- Promise search consistency, transactions, or atomic optimistic updates.
-- Blindly retry creates, comments, or other ambiguous mutations.
-- Hide GitHub validation, permissions, throttling, or GraphQL errors.
-- Let MCP constrain the SDK contract.
-- change v0.1 semantics without updating `SPEC.md`, the contract manifest, and
-  conformance scenarios together.
+- A semantic change MUST update `SPEC.md` first.
+- The same change MUST update every affected schema, example, conformance
+  scenario, manifest checksum, and SDK.
+- A documentation-only change MUST NOT silently alter contract behavior.
+- Conformance fixtures MUST cover behavior that SDKs are required to share.
+- Contract JSON and manifest checksums MUST be validated before submission.
+- Derived SDK tests MUST pass before their contract version is declared
+  supported.

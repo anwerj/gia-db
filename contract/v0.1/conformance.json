@@ -1,5 +1,5 @@
 {
-  "contract": "giadb",
+  "contract": "GiaDB",
   "version": "0.1.0",
   "scenarios": [
     {
