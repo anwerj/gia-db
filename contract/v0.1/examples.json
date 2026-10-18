@@ -25,6 +25,8 @@
     "items": [],
     "next_token": "opaque:example",
     "exhausted": false,
+    "incomplete": false,
+    "truncated": false,
     "meta": {
       "request_id": "ABC0:1234",
       "etag": "\"page-etag\"",

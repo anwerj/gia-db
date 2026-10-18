@@ -8,6 +8,7 @@
     },
     "resource": {
       "type": "object",
+      "$comment": "table must equal the value of the single gia/table/<name> label; tools/validate_contract.py enforces this cross-field rule",
       "additionalProperties": false,
       "required": [
         "id",
@@ -29,8 +30,19 @@
         },
         "labels": {
           "type": "array",
-          "items": { "type": "string" },
-          "uniqueItems": true
+          "items": {
+            "type": "string",
+            "if": { "pattern": "^gia/table/" },
+            "then": {
+              "pattern": "^gia/table/[a-z0-9][a-z0-9._-]{0,39}$"
+            }
+          },
+          "uniqueItems": true,
+          "contains": {
+            "pattern": "^gia/table/[a-z0-9][a-z0-9._-]{0,39}$"
+          },
+          "minContains": 1,
+          "maxContains": 1
         },
         "state": { "$ref": "#/$defs/state" },
         "created_at": { "type": "string", "format": "date-time" },
@@ -73,7 +85,13 @@
     "resource_page": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["items", "exhausted", "meta"],
+      "required": [
+        "items",
+        "exhausted",
+        "meta",
+        "incomplete",
+        "truncated"
+      ],
       "properties": {
         "items": {
           "type": "array",
@@ -105,7 +123,7 @@
         "title_match": { "type": "string" },
         "created_since": { "type": "string", "format": "date-time" },
         "updated_since": { "type": "string", "format": "date-time" },
-        "state": { "enum": ["open", "closed", "all"] },
+        "state": { "enum": ["active", "forgotten", "all"] },
         "table": {
           "type": "string",
           "pattern": "^[a-z0-9][a-z0-9._-]{0,39}$"

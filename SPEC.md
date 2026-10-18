@@ -55,8 +55,8 @@ gia/table/<name>
 uppercase, malformed, or duplicate table classification before mutation.
 
 An issue with no table label is an ordinary issue and MUST be omitted from
-GiaDB enumeration and search results. An issue with more than one distinct
-table label is malformed and MUST produce `invalid_resource`; it MUST NOT be
+GiaDB enumeration and search results. An issue with more than one table label
+is malformed and MUST produce `invalid_resource`; it MUST NOT be
 silently selected as one table.
 
 Other reserved labels use `gia/<key>/<value>`, for example
@@ -88,9 +88,19 @@ not immutable: edits made through GitHub remain visible.
 ## 5. Operations
 
 - **Create** creates one active issue with title, body, and labels.
-- **Get** retrieves one issue by number, regardless of open or closed state.
+- **Get** retrieves one issue by number, regardless of active or forgotten
+  state.
 - **Update** patches supported mutable issue fields. Omitted fields remain
-  unchanged. Replacing labels is explicit.
+  unchanged. Its table and label fields have these exact semantics:
+  - `table` without `labels` replaces the existing table label and preserves
+    every non-table label.
+  - `labels` without `table` replaces the complete label set and MUST contain
+    exactly one valid table label.
+  - When both are provided, `labels` replaces the complete non-table label set.
+    It MAY omit the table label; if it includes one, that label MUST agree with
+    `table`. A conflicting table label MUST produce `invalid_argument`.
+  - Every successful update MUST return a resource with exactly one valid table
+    label.
 - **NewSection** creates one comment.
 - **ListSections** lists sections and supports pagination.
 - **List** lists and searches resources. It supports pagination and filters
@@ -99,7 +109,9 @@ not immutable: edits made through GitHub remain visible.
 - **Forget** closes an issue.
 - **Reopen** opens a closed issue.
 
-List defaults to active resources. Closed or all-state enumeration requires an
+List defaults to active resources. The public state filters are `active`,
+`forgotten`, and `all`. Adapters map `active` and `forgotten` to GitHub's open
+and closed states internally. Forgotten or all-state enumeration requires an
 explicit state filter. Exact ID lookup is the explicit historical read path.
 There is no destroy operation.
 
@@ -130,6 +142,9 @@ Title matching through GitHub search does not guarantee exact substring
 matching or read-after-write consistency. A database scan without text filters
 uses repository issue enumeration. Enumeration does not provide snapshot
 isolation while GitHub changes.
+
+Body and comment-text matching are intentionally deferred from v0.1. SDKs MUST
+NOT expose them as portable v0.1 query capabilities.
 
 ## 7. Consistency and concurrency
 
