@@ -70,11 +70,11 @@ No SQL compatibility, high-throughput guarantees, or ACID transactions are impli
 
 ## Specification first
 
-GiaDB is designed as a language-neutral specification. The goal is for different implementations to follow the same contract, with SDKs planned for:
+GiaDB is designed as a language-neutral specification. The goal is for different implementations to follow the same contract.
 
-- Go — `gia-go`
-- Python — `gia-py`
-- TypeScript — `gia-ts`
+- **Go — [`gia-go`](https://github.com/anwerj/gia-go), the reference implementation**
+- Python — `gia-py` (planned)
+- TypeScript — `gia-ts` (planned)
 
 An MCP server can be built on top of an SDK, but **GiaDB itself is not an MCP server**.
 
