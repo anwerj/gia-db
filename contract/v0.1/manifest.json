@@ -1,0 +1,20 @@
+{
+  "name": "giadb-contract",
+  "version": "0.1.0",
+  "specification": "../../SPEC.md",
+  "schema_dialect": "https://json-schema.org/draft/2020-12/schema",
+  "files": [
+    {
+      "path": "contract.schema.json",
+      "sha256": "ae790b570a73c5b109e214a58d12a7d63fc94762fd437a87d1141c7c2bafa56e"
+    },
+    {
+      "path": "examples.json",
+      "sha256": "d3f2cf9dcd21b32662344593fd475ec97fb852c51f8cfee8813c320398826f65"
+    },
+    {
+      "path": "conformance.json",
+      "sha256": "17f8c360d4e224c1d32e124ee86ab6b06e9030c9a5f2fd3c79c6f8e0e7931ccd"
+    }
+  ]
+}
