@@ -31,12 +31,14 @@ Yet even a small database usually means provisioning storage, managing backups, 
 
 A repository only scopes the database. **Resources are stored in GitHub Issues and accessed through GitHub APIs—not through Git, commits, or repository files.**
 
+An issue is a GiaDB resource only when its body begins with the reserved GiaDB marker. Labels are optional metadata and do not decide whether an issue is a resource. GitHub's rendered view usually hides the marker; the raw editor and the GitHub API can still show it.
+
 | GitHub | GiaDB |
 |---|---|
 | Repository | Database location |
 | Issue | Resource / record |
 | Issue number | Resource ID |
-| Labels | Resource type and metadata |
+| Labels | Optional metadata |
 | Title | Resource name |
 | Body | Main content |
 | Comments | Sections or additional information |

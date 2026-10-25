@@ -3,50 +3,142 @@
   "version": "0.1.0",
   "scenarios": [
     {
-      "id": "labels.valid",
-      "input": ["gia/table/skill", "gia/scope/personal", "docs"],
-      "expect": { "kind": "resource", "table": "skill" }
+      "id": "marker.recognized",
+      "input": {
+        "raw_body": "<!-- gia-db:v1 -->\nPrefer direct language."
+      },
+      "expect": {
+        "kind": "resource",
+        "body": "Prefer direct language."
+      }
     },
     {
-      "id": "labels.ordinary_issue",
-      "input": ["bug", "docs"],
+      "id": "marker.unmarked",
+      "input": { "raw_body": "An ordinary issue" },
       "expect": { "kind": "non_resource" }
     },
     {
-      "id": "labels.multiple_tables",
-      "input": ["gia/table/skill", "gia/table/task"],
-      "expect": { "error": "invalid_resource" }
+      "id": "marker.embedded_not_adopted",
+      "input": { "raw_body": "notes\n<!-- gia-db:v1 -->\n" },
+      "expect": { "kind": "non_resource" }
     },
     {
-      "id": "labels.invalid_table",
-      "input": ["gia/table/Bad Name"],
-      "expect": { "error": "invalid_resource" }
-    },
-    {
-      "id": "resource.table_matches_labels",
+      "id": "marker.labels_do_not_identify",
       "input": {
-        "table": "skill",
-        "labels": ["gia/table/skill", "docs"]
+        "raw_body": "An ordinary issue",
+        "labels": ["bug", "docs"]
       },
-      "expect": { "valid": true }
+      "expect": { "kind": "non_resource" }
     },
     {
-      "id": "resource.table_mismatch",
+      "id": "marker.noncanonical",
       "input": {
-        "table": "task",
-        "labels": ["gia/table/skill", "docs"]
+        "raw_bodies": [
+          "<!-- gia-db:v1 -->",
+          "<!-- gia-db:v1 -->\r\nhello",
+          " <!-- gia-db:v1 -->\nhello",
+          "<!-- gia-db:v2 -->\nhello",
+          "<!--  gia-db:v1 -->\nhello"
+        ]
       },
-      "expect": { "error": "invalid_resource" }
+      "expect": {
+        "kinds": [
+          "non_resource",
+          "non_resource",
+          "non_resource",
+          "non_resource",
+          "non_resource"
+        ]
+      }
+    },
+    {
+      "id": "marker.extract_exact",
+      "input": {
+        "raw_body": "<!-- gia-db:v1 -->\n# Title\n\nParagraph\n"
+      },
+      "expect": { "body": "# Title\n\nParagraph\n" }
+    },
+    {
+      "id": "marker.extract_empty",
+      "input": { "raw_body": "<!-- gia-db:v1 -->\n" },
+      "expect": { "body": "" }
+    },
+    {
+      "id": "marker.extract_json",
+      "input": { "raw_body": "<!-- gia-db:v1 -->\n{\"ok\":true}" },
+      "expect": { "body": "{\"ok\":true}" }
+    },
+    {
+      "id": "marker.extract_embedded",
+      "input": {
+        "raw_body": "<!-- gia-db:v1 -->\nkeep <!-- gia-db:v1 --> inline"
+      },
+      "expect": { "body": "keep <!-- gia-db:v1 --> inline" }
+    },
+    {
+      "id": "marker.update_preserves_one",
+      "input": { "logical_body": "Updated body." },
+      "expect": {
+        "raw_body": "<!-- gia-db:v1 -->\nUpdated body.",
+        "body": "Updated body.",
+        "marker_count": 1
+      }
+    },
+    {
+      "id": "marker.update_embedded",
+      "input": { "logical_body": "see <!-- gia-db:v1 --> later" },
+      "expect": {
+        "raw_body": "<!-- gia-db:v1 -->\nsee <!-- gia-db:v1 --> later",
+        "body": "see <!-- gia-db:v1 --> later",
+        "marker_count": 2
+      }
+    },
+    {
+      "id": "labels.keep_identity",
+      "input": {
+        "id": 21,
+        "raw_body": "<!-- gia-db:v1 -->\nPrimary",
+        "before": ["docs", "custom"],
+        "labels": ["personal"]
+      },
+      "expect": {
+        "id": 21,
+        "raw_body": "<!-- gia-db:v1 -->\nPrimary",
+        "body": "Primary",
+        "labels": ["personal"]
+      }
+    },
+    {
+      "id": "mutation.unmarked_rejected",
+      "input": { "raw_body": "ordinary", "operation": "update" },
+      "expect": { "error": "not_found", "mutated": false }
+    },
+    {
+      "id": "mutation.lost_marker",
+      "input": {
+        "id": 44,
+        "accepted": true,
+        "raw_body": "Updated body."
+      },
+      "expect": {
+        "error": "invalid_resource",
+        "outcome": "applied",
+        "resource_id": 44
+      }
     },
     {
       "id": "list.pull_request",
-      "input": { "number": 7, "pull_request": {} },
+      "input": {
+        "number": 7,
+        "pull_request": {},
+        "body": "<!-- gia-db:v1 -->\nnot a resource"
+      },
       "expect": { "kind": "non_resource" }
     },
     {
       "id": "list.empty_filtered_page_continues",
       "input": {
-        "items": [{ "number": 8, "labels": ["bug"] }],
+        "items": [{ "number": 8, "body": "ordinary" }],
         "next_token": "opaque-next"
       },
       "expect": {
@@ -109,44 +201,12 @@
       "expect": { "incomplete": true }
     },
     {
-      "id": "update.preserve_labels",
-      "input": {
-        "before": ["gia/table/skill", "docs", "custom"],
-        "table": "task"
-      },
-      "expect": {
-        "labels": ["gia/table/task", "docs", "custom"]
-      }
-    },
-    {
       "id": "update.replace_labels",
       "input": {
-        "before": ["gia/table/skill", "docs", "custom"],
-        "labels": ["gia/table/skill", "personal"]
-      },
-      "expect": {
-        "labels": ["gia/table/skill", "personal"]
-      }
-    },
-    {
-      "id": "update.table_with_labels",
-      "input": {
-        "before": ["gia/table/skill", "docs", "custom"],
-        "table": "task",
+        "before": ["docs", "custom"],
         "labels": ["personal"]
       },
-      "expect": {
-        "labels": ["gia/table/task", "personal"]
-      }
-    },
-    {
-      "id": "update.conflicting_table",
-      "input": {
-        "before": ["gia/table/skill", "docs"],
-        "table": "task",
-        "labels": ["gia/table/process", "personal"]
-      },
-      "expect": { "error": "invalid_argument" }
+      "expect": { "labels": ["personal"] }
     },
     {
       "id": "lifecycle.forget",
