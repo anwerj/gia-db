@@ -1,0 +1,7 @@
+{{@response
+  $global.id = response.parsedBody.id
+}}
+POST {{SERVER_URL}}/create?title=Test%20Document&labels=%5B%22test%22%5D
+Content-Type: text/plain
+
+This is the body of document.

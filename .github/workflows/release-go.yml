@@ -1,0 +1,107 @@
+name: Release Go
+
+on:
+  push:
+    tags:
+      - "go/v*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Require the Go module path
+        run: |
+          set -eu
+          module="$(awk '$1 == "module" { print $2 }' go/go.mod)"
+          if [ "$module" != "github.com/anwerj/gia-db/go" ]; then
+            echo "go.mod module is ${module}, want github.com/anwerj/gia-db/go"
+            exit 1
+          fi
+
+      - name: Require a release tag
+        if: github.event_name == 'push'
+        run: |
+          set -eu
+          tag="${GITHUB_REF#refs/tags/}"
+          printf '%s\n' "$tag" | grep -Eq '^go/v[0-9]+\.[0-9]+\.[0-9]+$'
+
+      - name: Set up Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: "1.26.x"
+          cache: true
+          cache-dependency-path: go/go.sum
+
+      - name: Check formatting
+        working-directory: go
+        run: test -z "$(gofmt -l .)"
+
+      - name: Vet
+        working-directory: go
+        run: go vet ./...
+
+      - name: Test
+        working-directory: go
+        run: go test -race ./...
+
+      - name: Record validation
+        run: |
+          {
+            echo "### Go validation"
+            echo "Commit: \`${GITHUB_SHA}\`"
+            echo "Module: \`github.com/anwerj/gia-db/go\`"
+            echo "Event: \`${GITHUB_EVENT_NAME}\`"
+            echo "Publishing runs only for a \`go/vX.Y.Z\` tag push after this job succeeds."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  publish:
+    needs: validate
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/go/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          tag="${GITHUB_REF#refs/tags/}"
+          printf '%s\n' "$tag" | grep -Eq '^go/v[0-9]+\.[0-9]+\.[0-9]+$'
+          module="$(awk '$1 == "module" { print $2 }' go/go.mod)"
+          if [ "$module" != "github.com/anwerj/gia-db/go" ]; then
+            echo "go.mod module is ${module}, want github.com/anwerj/gia-db/go"
+            exit 1
+          fi
+          cat > "$RUNNER_TEMP/notes.md" <<EOF
+          Component: Go SDK
+          Tag: ${tag}
+          Commit: ${GITHUB_SHA}
+          Module: ${module}
+          Destination: Go module proxy from this tag. This workflow does not upload a module archive.
+          EOF
+          gh release create "$tag" \
+            --title "$tag" \
+            --verify-tag \
+            --notes-file "$RUNNER_TEMP/notes.md"
+          {
+            echo "### Go release"
+            echo "Tag: \`${tag}\`"
+            echo "Commit: \`${GITHUB_SHA}\`"
+            echo "Module: \`${module}\`"
+            echo "Destination: Go module proxy"
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,4 @@
+
+# Connectivity check. The server has no /health route; listing is the live call.
+
+GET {{SERVER_URL}}/list?page_size=10

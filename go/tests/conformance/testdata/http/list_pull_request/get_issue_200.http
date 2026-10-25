@@ -1,0 +1,11 @@
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "number": 7,
+  "title": "pull",
+  "body": "not a resource",
+  "state": "open",
+  "labels": [{"name": "docs"}],
+  "pull_request": {}
+}

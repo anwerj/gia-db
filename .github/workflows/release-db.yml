@@ -1,0 +1,110 @@
+name: Release spec
+
+on:
+  push:
+    tags:
+      - "db/v*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Require the tag to match the contract manifest
+        if: github.event_name == 'push'
+        run: |
+          set -eu
+          tag="${GITHUB_REF#refs/tags/}"
+          version="$(python3 -c 'import json; print(json.load(open("db/contract/v0.1/manifest.json"))["version"])')"
+          expected="db/v${version}"
+          if [ "$tag" != "$expected" ]; then
+            echo "tag ${tag} does not match manifest version ${version} (${expected})"
+            exit 1
+          fi
+
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: db/tools/requirements.txt
+
+      - name: Install contract validator
+        run: python -m pip install -r db/tools/requirements.txt
+
+      - name: Verify manifest checksums
+        working-directory: db/contract/v0.1
+        run: |
+          python - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+
+          manifest = json.loads(Path("manifest.json").read_text())
+          for entry in manifest["files"]:
+              actual = hashlib.sha256(Path(entry["path"]).read_bytes()).hexdigest()
+              assert actual == entry["sha256"], (entry["path"], actual)
+          PY
+
+      - name: Validate schemas, examples, and conformance
+        run: python db/tools/validate_contract.py
+
+      - name: Record validation
+        run: |
+          {
+            echo "### Spec validation"
+            echo "Commit: \`${GITHUB_SHA}\`"
+            echo "Event: \`${GITHUB_EVENT_NAME}\`"
+            echo "Publishing runs only for a \`db/v*\` tag push after this job succeeds."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  publish:
+    needs: validate
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/db/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          tag="${GITHUB_REF#refs/tags/}"
+          version="$(python3 -c 'import json; print(json.load(open("db/contract/v0.1/manifest.json"))["version"])')"
+          expected="db/v${version}"
+          if [ "$tag" != "$expected" ]; then
+            echo "tag ${tag} does not match manifest version ${version} (${expected})"
+            exit 1
+          fi
+          cat > "$RUNNER_TEMP/notes.md" <<EOF
+          Component: specification
+          Tag: ${tag}
+          Commit: ${GITHUB_SHA}
+          Contract version: ${version}
+          Destination: GitHub Release. No package registry.
+          EOF
+          gh release create "$tag" \
+            --title "$tag" \
+            --verify-tag \
+            --notes-file "$RUNNER_TEMP/notes.md"
+          {
+            echo "### Spec release"
+            echo "Tag: \`${tag}\`"
+            echo "Commit: \`${GITHUB_SHA}\`"
+            echo "Contract version: \`${version}\`"
+            echo "Destination: GitHub Release"
+          } >> "$GITHUB_STEP_SUMMARY"

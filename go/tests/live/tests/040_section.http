@@ -1,0 +1,4 @@
+POST {{SERVER_URL}}/section?id={{$global.id}}
+Content-Type: text/plain
+
+A comment on the document.

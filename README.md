@@ -46,6 +46,20 @@ Every non-pull-request issue in the repository is a GiaDB resource. Labels are o
 
 GiaDB defines the semantics. Implementations use GitHub APIs to work with the data.
 
+`db/SPEC.md` and the versioned contract under `db/contract/` are the contract. SDK behavior follows that contract; an implementation does not define a second one.
+
+## Repository
+
+| Path | What it is |
+|---|---|
+| [`db/`](db/SPEC.md) | Specification, conformance assets, and validation tools |
+| [`go/`](go/) | Go SDK, module `github.com/anwerj/gia-db/go` |
+| [`CONSTITUTION.md`](CONSTITUTION.md) | Repository policy for maintainers and coding agents |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) | Local checks and review expectations |
+| [`RELEASING.md`](RELEASING.md) | Component tags and release rules |
+
+Python, TypeScript, and MCP are planned and are not implemented here.
+
 ## What is it for?
 
 GiaDB is designed for small, resource-oriented workloads where simplicity and human visibility matter more than raw performance.
@@ -66,9 +80,10 @@ That's the kind of problem GiaDB is meant to explore.
 
 GiaDB is defined by a language-neutral specification. The goal is for different implementations to follow the same contract.
 
-- **Go:** [`gia-go`](https://github.com/anwerj/gia-go) — reference implementation
-- **Python:** `gia-py` — planned
-- **TypeScript:** `gia-ts` — planned
+- **Go:** [`go/`](go/) — implemented. Module path `github.com/anwerj/gia-db/go`.
+- **Python:** `gia-py` — planned, not implemented
+- **TypeScript:** `gia-ts` — planned, not implemented
+- **MCP:** `gia-mcp` — planned, not implemented
 
 The following is illustrative pseudocode, not a language-specific API signature.
 
