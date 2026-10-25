@@ -8,13 +8,12 @@
     },
     "resource": {
       "type": "object",
-      "$comment": "table must equal the value of the single gia/table/<name> label; tools/validate_contract.py enforces this cross-field rule",
+      "$comment": "body is the caller-defined issue body, stored and returned unchanged",
       "additionalProperties": false,
       "required": [
         "id",
         "title",
         "body",
-        "table",
         "labels",
         "state",
         "created_at",
@@ -24,25 +23,10 @@
         "id": { "type": "integer", "minimum": 1 },
         "title": { "type": "string" },
         "body": { "type": "string" },
-        "table": {
-          "type": "string",
-          "pattern": "^[a-z0-9][a-z0-9._-]{0,39}$"
-        },
         "labels": {
           "type": "array",
-          "items": {
-            "type": "string",
-            "if": { "pattern": "^gia/table/" },
-            "then": {
-              "pattern": "^gia/table/[a-z0-9][a-z0-9._-]{0,39}$"
-            }
-          },
-          "uniqueItems": true,
-          "contains": {
-            "pattern": "^gia/table/[a-z0-9][a-z0-9._-]{0,39}$"
-          },
-          "minContains": 1,
-          "maxContains": 1
+          "items": { "type": "string" },
+          "uniqueItems": true
         },
         "state": { "$ref": "#/$defs/state" },
         "created_at": { "type": "string", "format": "date-time" },
@@ -124,10 +108,6 @@
         "created_since": { "type": "string", "format": "date-time" },
         "updated_since": { "type": "string", "format": "date-time" },
         "state": { "enum": ["active", "forgotten", "all"] },
-        "table": {
-          "type": "string",
-          "pattern": "^[a-z0-9][a-z0-9._-]{0,39}$"
-        },
         "all_labels": {
           "type": "array",
           "items": { "type": "string" },

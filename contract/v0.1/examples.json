@@ -3,10 +3,8 @@
     "id": 42,
     "title": "Concise technical tone",
     "body": "Prefer direct language and concrete examples.",
-    "table": "tone",
     "labels": [
-      "gia/table/tone",
-      "gia/scope/personal",
+      "personal",
       "documentation"
     ],
     "state": "active",

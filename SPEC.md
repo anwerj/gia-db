@@ -6,8 +6,8 @@ The key words MUST, MUST NOT, SHOULD, SHOULD NOT, and MAY are normative.
 
 The project name MUST be written exactly as `GiaDB` in prose, documentation,
 and user-facing text. No alternative capitalization may be used as the project
-name. Existing repository, package, label, and machine identifiers such as
-`gia-db`, `gia-go`, and `gia/` retain their defined forms.
+name. Existing repository and package identifiers such as `gia-db` and
+`gia-go` retain their defined forms.
 
 ## 1. Scope
 
@@ -34,7 +34,7 @@ NOT replace the issue number in the public contract.
 | Issue number | Resource ID |
 | Title | Title |
 | Body | Primary content |
-| Labels | Classification and metadata |
+| Labels | Optional metadata |
 | Issue comment | Section |
 | Open issue | Active resource |
 | Closed issue | Forgotten resource |
@@ -43,36 +43,36 @@ Pull requests are not resources. Adapters using REST Issues endpoints or search
 MUST reject any item with a `pull_request` member. GraphQL adapters MUST
 type-check search nodes and SHOULD use `Repository.issues` for enumeration.
 
-## 3. Classification labels
+## 3. Resources and bodies
 
-`gia/` is reserved. Every resource MUST contain exactly one table label:
+Every issue in the configured repository is a GiaDB resource, except a pull
+request. No title, body, comment, or label identifies a resource.
 
-```text
-gia/table/<name>
-```
+The issue body and every comment body are caller-defined. SDKs MUST send and
+return those bytes unchanged. An empty body is valid and MUST stay empty. An
+SDK MUST NOT insert, remove, wrap, or rewrite a prefix, suffix, comment, or
+other hidden content in a body.
 
-`<name>` MUST match `[a-z0-9][a-z0-9._-]{0,39}`. SDKs MUST reject an empty,
-uppercase, malformed, or duplicate table classification before mutation.
+An update that omits the body MUST leave the stored issue body unchanged and
+MUST NOT send a body field. Changing labels MUST NOT change the body.
 
-An issue with no table label is an ordinary issue and MUST be omitted from
-GiaDB enumeration and search results. An issue with more than one table label
-is malformed and MUST produce `invalid_resource`; it MUST NOT be
-silently selected as one table.
+## 4. Labels
 
-Other reserved labels use `gia/<key>/<value>`, for example
-`gia/scope/personal` and `gia/availability/always`. v0.1 assigns no singularity
-or query semantics to keys other than `table`. SDKs MUST expose and preserve
-all labels, including labels outside `gia/`, unless the caller explicitly
-replaces them.
+Labels are optional metadata chosen by the caller. They do not identify a
+resource, assign it a type, or change its ID. No label text or prefix is
+reserved. A resource MAY have no labels.
 
-Labels must already exist in GitHub when required by GitHub. Label provisioning
-is an administrative operation outside v0.1 resource creation. Creation MUST
-send title, body, and labels in one issue-creation request.
+Supplying `labels` to Update replaces the complete label set. Omitting `labels`
+leaves the current labels unchanged.
 
-## 4. Resources and sections
+Label provisioning remains an administrative GitHub operation. Creation sends
+the title, raw body, and any caller-supplied labels in one issue-creation
+request.
 
-The issue body is the primary content and MAY contain text, Markdown, JSON, or
-a datatype chosen by the table.
+## 5. Sections
+
+The issue body is the primary content. It MAY contain text, Markdown, JSON, or
+another format selected by the caller.
 
 Comments are first-class sections. A section has its own comment ID, body,
 author, and timestamps. Reading a resource MUST NOT imply that any comments
@@ -85,49 +85,50 @@ produce `validation`.
 Append means create one issue comment. It is append-oriented by convention,
 not immutable: edits made through GitHub remain visible.
 
-## 5. Operations
+## 6. Operations
 
-- **Create** creates one active issue with title, body, and labels.
+- **Create** creates one active issue from a title, body, and optional labels.
+  The body is stored exactly as supplied.
 - **Get** retrieves one issue by number, regardless of active or forgotten
-  state.
+  state. A pull request is `not_found`.
 - **Update** patches supported mutable issue fields. Omitted fields remain
-  unchanged. Its table and label fields have these exact semantics:
-  - `table` without `labels` replaces the existing table label and preserves
-    every non-table label.
-  - `labels` without `table` replaces the complete label set and MUST contain
-    exactly one valid table label.
-  - When both are provided, `labels` replaces the complete non-table label set.
-    It MAY omit the table label; if it includes one, that label MUST agree with
-    `table`. A conflicting table label MUST produce `invalid_argument`.
-  - Every successful update MUST return a resource with exactly one valid table
-    label.
+  unchanged. A supplied body replaces the stored body exactly. A supplied
+  label set replaces the complete label set.
 - **NewSection** creates one comment.
 - **ListSections** lists sections and supports pagination.
 - **List** lists and searches resources. It supports pagination and filters
-  including exact resource IDs, title matching, state, table, labels,
-  timestamps, and supported sorting.
-- **Forget** closes an issue.
-- **Reopen** opens a closed issue.
+  for exact resource IDs, title matching, state, labels, timestamps, and
+  supported sorting.
+- **Forget** closes an issue without sending a body or changing labels.
+- **Reopen** opens a closed issue without sending a body or changing labels.
 
-List defaults to active resources. The public state filters are `active`,
-`forgotten`, and `all`. Adapters map `active` and `forgotten` to GitHub's open
-and closed states internally. Forgotten or all-state enumeration requires an
-explicit state filter. Exact ID lookup is the explicit historical read path.
-There is no destroy operation.
+Before Update, NewSection, ListSections, Forget, or Reopen, an SDK MUST read
+the target and MUST reject a pull request with `not_found` before performing
+that operation. That read checks only whether the target is a pull request. It
+MUST NOT modify the body. The read and the following GitHub request are
+separate and are not atomic. Forget and Reopen MUST NOT send a body.
+Forgetting does not destroy historical content.
 
-Mutations MUST validate the resource returned by GitHub. A response that lost
-the required table label, including because of permissions, is not success.
+There is no destroy operation. List defaults to active resources. The public
+state filters are `active`, `forgotten`, and `all`. Adapters map `active` and
+`forgotten` to GitHub's open and closed states internally. Forgotten or
+all-state enumeration requires an explicit state filter. Exact ID lookup is the
+explicit historical read path.
 
-## 6. Query and pagination
+## 7. Query and pagination
 
 `List` is the only collection/query operation. Queries map to GitHub-native
-capabilities: exact issue numbers, title matching, state, table label,
-additional labels, timestamps, supported sorting, and pagination.
+capabilities: exact issue numbers, title matching, state, labels, timestamps,
+supported sorting, and pagination.
+
+Resource identity does not depend on body content. Search-backed filters use
+GitHub search, after which pull requests MUST be rejected. A label or body
+MUST NOT be used to decide whether an issue is a resource.
 
 Every page MUST contain an opaque continuation token or an explicit indication
 that no next page exists. Tokens are adapter-owned, unstable across query
 changes, and MUST NOT be interpreted by callers. A short or empty page can
-still have a continuation token after non-resource issues are filtered.
+still have a continuation token after pull requests are filtered.
 
 When `List` uses GitHub issue search for matching, it MUST add repository and
 issue-only constraints. Search-backed listing is discovery, not authoritative
@@ -146,7 +147,7 @@ isolation while GitHub changes.
 Body and comment-text matching are intentionally deferred from v0.1. SDKs MUST
 NOT expose them as portable v0.1 query capabilities.
 
-## 7. Consistency and concurrency
+## 8. Consistency and concurrency
 
 GiaDB does not provide transactions or atomic multi-resource operations.
 GitHub issue update endpoints do not offer a portable atomic expected-version
@@ -161,7 +162,7 @@ A mutation transport failure that may have occurred after GitHub accepted the
 request MUST produce `outcome_unknown`. It MUST NOT be represented as
 `not_applied`.
 
-## 8. Errors
+## 9. Errors
 
 SDKs MUST provide stable error codes with transport details available
 separately:
@@ -182,15 +183,15 @@ Rate-limit errors SHOULD include retry time, limit, remaining requests, reset
 time, HTTP status, and GitHub request ID when available. Failed requests MUST
 NOT be converted into empty resources or complete empty pages.
 
-## 9. SDK implementation boundary
+## 10. SDK implementation boundary
 
 REST clients MUST send `Accept: application/vnd.github+json` and pin
 `X-GitHub-Api-Version: 2026-03-10`. GraphQL clients MUST inspect both HTTP
 status and GraphQL errors.
 
 A GiaDB SDK MUST provide a thin interface over GitHub APIs. It MUST implement
-the resource, section, lifecycle, listing, pagination, and reserved-label
-semantics defined by this specification.
+the resource, section, lifecycle, listing, and pagination semantics defined by
+this specification. Issue and comment bodies MUST pass through unchanged.
 
 The core SDK MUST NOT automatically retry, delay, queue, throttle, pace, or
 serialize requests. It MUST NOT impose a caller concurrency limit. This applies
@@ -205,8 +206,8 @@ to retry.
 Pagination MUST be explicit. A paginated operation returns one page and an
 opaque continuation token. The SDK MUST NOT automatically load every page.
 
-An operation MAY perform an additional GitHub read when required to verify
-that the target Issue is a valid GiaDB resource before mutation. Such a read is
+An operation MAY perform an additional GitHub read when required to reject a
+pull request before mutation or before returning its sections. Such a read is
 a correctness check, not caching or synchronization.
 
 Conditional requests MAY be supported when explicitly requested by the
@@ -217,7 +218,7 @@ No cache is required. If an implementation offers caching outside the core
 SDK, that cache MUST be optional and disposable and MUST NOT become a source of
 truth.
 
-## 10. SDK contract
+## 11. SDK contract
 
 Go, Python, and TypeScript SDKs MUST implement this logical model and pass the
 versioned conformance scenarios. Public models MUST NOT expose a third-party

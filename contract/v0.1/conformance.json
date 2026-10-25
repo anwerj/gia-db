@@ -3,50 +3,69 @@
   "version": "0.1.0",
   "scenarios": [
     {
-      "id": "labels.valid",
-      "input": ["gia/table/skill", "gia/scope/personal", "docs"],
-      "expect": { "kind": "resource", "table": "skill" }
-    },
-    {
-      "id": "labels.ordinary_issue",
-      "input": ["bug", "docs"],
-      "expect": { "kind": "non_resource" }
-    },
-    {
-      "id": "labels.multiple_tables",
-      "input": ["gia/table/skill", "gia/table/task"],
-      "expect": { "error": "invalid_resource" }
-    },
-    {
-      "id": "labels.invalid_table",
-      "input": ["gia/table/Bad Name"],
-      "expect": { "error": "invalid_resource" }
-    },
-    {
-      "id": "resource.table_matches_labels",
+      "id": "body.unchanged",
       "input": {
-        "table": "skill",
-        "labels": ["gia/table/skill", "docs"]
+        "bodies": [
+          "",
+          "# Title\n\nParagraph\n",
+          "{\"ok\":true}",
+          "<!-- note -->"
+        ]
       },
-      "expect": { "valid": true }
+      "expect": {
+        "bodies": [
+          "",
+          "# Title\n\nParagraph\n",
+          "{\"ok\":true}",
+          "<!-- note -->"
+        ]
+      }
     },
     {
-      "id": "resource.table_mismatch",
+      "id": "issue.any_body",
       "input": {
-        "table": "task",
-        "labels": ["gia/table/skill", "docs"]
+        "number": 4,
+        "body": "",
+        "labels": ["bug", "docs"]
       },
-      "expect": { "error": "invalid_resource" }
+      "expect": { "kind": "resource", "body": "" }
+    },
+    {
+      "id": "labels.do_not_change_body",
+      "input": {
+        "id": 21,
+        "body": "Primary",
+        "before": ["docs", "custom"],
+        "labels": ["personal"]
+      },
+      "expect": {
+        "id": 21,
+        "body": "Primary",
+        "labels": ["personal"]
+      }
+    },
+    {
+      "id": "mutation.pull_request_rejected",
+      "input": {
+        "number": 8,
+        "pull_request": {},
+        "operation": "update"
+      },
+      "expect": { "error": "not_found", "mutated": false }
     },
     {
       "id": "list.pull_request",
-      "input": { "number": 7, "pull_request": {} },
+      "input": {
+        "number": 7,
+        "pull_request": {},
+        "body": "not a resource"
+      },
       "expect": { "kind": "non_resource" }
     },
     {
       "id": "list.empty_filtered_page_continues",
       "input": {
-        "items": [{ "number": 8, "labels": ["bug"] }],
+        "items": [{ "number": 8, "pull_request": {}, "body": "not a resource" }],
         "next_token": "opaque-next"
       },
       "expect": {
@@ -109,44 +128,12 @@
       "expect": { "incomplete": true }
     },
     {
-      "id": "update.preserve_labels",
-      "input": {
-        "before": ["gia/table/skill", "docs", "custom"],
-        "table": "task"
-      },
-      "expect": {
-        "labels": ["gia/table/task", "docs", "custom"]
-      }
-    },
-    {
       "id": "update.replace_labels",
       "input": {
-        "before": ["gia/table/skill", "docs", "custom"],
-        "labels": ["gia/table/skill", "personal"]
-      },
-      "expect": {
-        "labels": ["gia/table/skill", "personal"]
-      }
-    },
-    {
-      "id": "update.table_with_labels",
-      "input": {
-        "before": ["gia/table/skill", "docs", "custom"],
-        "table": "task",
+        "before": ["docs", "custom"],
         "labels": ["personal"]
       },
-      "expect": {
-        "labels": ["gia/table/task", "personal"]
-      }
-    },
-    {
-      "id": "update.conflicting_table",
-      "input": {
-        "before": ["gia/table/skill", "docs"],
-        "table": "task",
-        "labels": ["gia/table/process", "personal"]
-      },
-      "expect": { "error": "invalid_argument" }
+      "expect": { "labels": ["personal"] }
     },
     {
       "id": "lifecycle.forget",

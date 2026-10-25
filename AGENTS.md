@@ -7,8 +7,8 @@ contract pack, and derived SDKs. It does not define GiaDB semantics.
 
 - The project name MUST be written exactly as `GiaDB`.
 - No alternative capitalization may be used as the project name.
-- Existing repository, package, label, and machine identifiers such as
-  `gia-db`, `gia-go`, and `gia/` MUST retain their defined forms.
+- Existing repository and package identifiers such as `gia-db` and `gia-go`
+  MUST retain their defined forms.
 
 ## Sources of truth
 

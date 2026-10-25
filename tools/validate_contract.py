@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import json
-import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -14,8 +13,6 @@ from jsonschema import Draft202012Validator, FormatChecker
 
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT = ROOT / "contract" / "v0.1"
-TABLE_NAME = re.compile(r"^[a-z0-9][a-z0-9._-]{0,39}$")
-TABLE_PREFIX = "gia/table/"
 
 
 def load(name: str) -> Any:
@@ -34,111 +31,46 @@ def validate_definition(schema: dict[str, Any], name: str, value: Any) -> None:
     ).validate(value)
 
 
-def classify_labels(labels: list[str]) -> tuple[str, str | None]:
-    table_labels = [label for label in labels if label.startswith(TABLE_PREFIX)]
-    if not table_labels:
-        return "non_resource", None
-    if len(table_labels) != 1:
-        raise ValueError("invalid_resource")
-    table = table_labels[0][len(TABLE_PREFIX) :]
-    if not TABLE_NAME.fullmatch(table):
-        raise ValueError("invalid_resource")
-    return "resource", table
-
-
-def validate_resource_relation(resource: dict[str, Any]) -> None:
-    try:
-        kind, table = classify_labels(resource["labels"])
-    except ValueError as error:
-        raise ValueError("resource has invalid table labels") from error
-    if kind != "resource" or table != resource["table"]:
-        raise ValueError("resource.table does not match its table label")
-
-
-def apply_update(update: dict[str, Any]) -> dict[str, Any]:
-    before = list(update["before"])
-    has_table = "table" in update
-    has_labels = "labels" in update
-
-    if has_table and not TABLE_NAME.fullmatch(update["table"]):
-        return {"error": "invalid_argument"}
-
-    if has_table and not has_labels:
-        non_table = [
-            label for label in before if not label.startswith(TABLE_PREFIX)
-        ]
-        return {"labels": [TABLE_PREFIX + update["table"], *non_table]}
-
-    if has_labels and not has_table:
-        labels = list(update["labels"])
-        try:
-            kind, _ = classify_labels(labels)
-        except ValueError:
-            return {"error": "invalid_argument"}
-        if kind != "resource":
-            return {"error": "invalid_argument"}
-        return {"labels": labels}
-
-    if has_table and has_labels:
-        labels = list(update["labels"])
-        supplied_tables = [
-            label for label in labels if label.startswith(TABLE_PREFIX)
-        ]
-        if len(supplied_tables) > 1:
-            return {"error": "invalid_argument"}
-        if supplied_tables:
-            supplied = supplied_tables[0][len(TABLE_PREFIX) :]
-            if not TABLE_NAME.fullmatch(supplied) or supplied != update["table"]:
-                return {"error": "invalid_argument"}
-        non_table = [
-            label for label in labels if not label.startswith(TABLE_PREFIX)
-        ]
-        return {"labels": [TABLE_PREFIX + update["table"], *non_table]}
-
-    return {"error": "invalid_argument"}
+def classify_issue(value: dict[str, Any]) -> dict[str, Any]:
+    if "pull_request" in value:
+        return {"kind": "non_resource"}
+    return {"kind": "resource", "body": value.get("body", "")}
 
 
 def evaluate(scenario: dict[str, Any]) -> dict[str, Any]:
     scenario_id = scenario["id"]
     value = scenario["input"]
 
-    if scenario_id.startswith("labels."):
-        try:
-            kind, table = classify_labels(value)
-        except ValueError:
-            return {"error": "invalid_resource"}
-        result: dict[str, Any] = {"kind": kind}
-        if table is not None:
-            result["table"] = table
-        return result
+    if scenario_id == "body.unchanged":
+        return {"bodies": list(value["bodies"])}
 
-    if scenario_id == "resource.table_matches_labels":
-        try:
-            validate_resource_relation(value)
-        except ValueError:
-            return {"error": "invalid_resource"}
-        return {"valid": True}
+    if scenario_id == "issue.any_body":
+        return classify_issue(value)
 
-    if scenario_id == "resource.table_mismatch":
-        try:
-            validate_resource_relation(value)
-        except ValueError:
-            return {"error": "invalid_resource"}
-        return {"valid": True}
+    if scenario_id == "labels.do_not_change_body":
+        return {
+            "id": value["id"],
+            "body": value["body"],
+            "labels": list(value["labels"]),
+        }
+
+    if scenario_id == "mutation.pull_request_rejected":
+        if "pull_request" not in value:
+            return {"mutated": True}
+        return {"error": "not_found", "mutated": False}
 
     if scenario_id == "list.pull_request":
-        return {
-            "kind": "non_resource"
-            if "pull_request" in value
-            else "candidate"
-        }
+        return classify_issue(value)
 
     if scenario_id == "list.empty_filtered_page_continues":
-        return {
-            "item_count": 0,
+        count = sum(1 for item in value["items"] if "pull_request" not in item)
+        result = {
+            "item_count": count,
             "exhausted": "next_token" not in value,
-            "next_token": value.get("next_token"),
         }
+        if "next_token" in value:
+            result["next_token"] = value["next_token"]
+        return result
 
     if scenario_id in {
         "list.state_default",
@@ -166,8 +98,8 @@ def evaluate(scenario: dict[str, Any]) -> dict[str, Any]:
     if scenario_id == "list.title_match_incomplete":
         return {"incomplete": value["incomplete_results"]}
 
-    if scenario_id.startswith("update."):
-        return apply_update(value)
+    if scenario_id == "update.replace_labels":
+        return {"labels": list(value["labels"])}
 
     if scenario_id == "lifecycle.forget":
         return {"state": "forgotten"}
@@ -210,7 +142,6 @@ def main() -> int:
     ).validate(conformance)
 
     validate_definition(schema, "resource", examples["resource"])
-    validate_resource_relation(examples["resource"])
     validate_definition(schema, "section", examples["section"])
     validate_definition(schema, "resource_page", examples["page"])
     validate_definition(schema, "error", examples["rate_error"])
