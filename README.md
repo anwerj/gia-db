@@ -34,7 +34,7 @@ Yet even a small database usually means provisioning storage, managing backups, 
 
 A repository scopes the database. **Resources are stored in GitHub Issues and accessed through GitHub APIs—not through Git, commits, or repository files.**
 
-Every non-pull-request issue in the repository is a GiaDB resource. Labels are optional metadata. Issue and comment bodies are passed through unchanged, without GiaDB injecting or rewriting content.
+Every non-pull-request issue in the repository is a GiaDB resource. Labels are optional metadata. The SDK passes issue and comment bodies through unchanged, without injecting GiaDB metadata or rewriting content.
 
 | GitHub | GiaDB |
 |---|---|
@@ -55,7 +55,7 @@ GiaDB defines the semantics. Implementations use GitHub APIs to work with the da
 
 | Path | What it is |
 |---|---|
-| [`db/`](db/SPEC.md) | Specification, conformance assets, and validation tools |
+| [`db/`](db/) | Specification, conformance assets, and validation tools |
 | [`go/`](go/) | Go SDK, module `github.com/anwerj/gia-db/go` |
 | [`CONSTITUTION.md`](CONSTITUTION.md) | Repository policy for maintainers and coding agents |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Local checks and review expectations |
@@ -99,8 +99,8 @@ resource = db.Update(id, fields)
 
 page = db.List(filters, pageSize, continuationToken?)
 
-section = db.NewSection(id, body)
-page = db.ListSections(id, pageSize, continuationToken?)
+section = db.NewSection(resourceID, body)
+page = db.ListSections(resourceID, pageSize, continuationToken?)
 
 db.Forget(id)
 db.Reopen(id)

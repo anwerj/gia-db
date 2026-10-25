@@ -1,14 +1,19 @@
 # Go SDK
 
-This directory is the Go 1.26 SDK for [GiaDB v0.1](../db/SPEC.md). The module path is `github.com/anwerj/gia-db/go`. This repository has no Go release tag yet.
+The [GiaDB v0.1](../db/SPEC.md) SDK for Go. Requires Go 1.26 or later. The module path is `github.com/anwerj/gia-db/go`. This repository has no Go release tag yet.
+
+The caller supplies the Go context. This example uses `context.Background()`.
 
 ```go
 import (
+    "context"
     "log"
     "os"
 
     "github.com/anwerj/gia-db/go"
 )
+
+ctx := context.Background()
 
 client, err := gia.NewClient(gia.Options{
     Owner:      "octocat",
@@ -84,8 +89,8 @@ source of truth; no local persistence or cache is required.
 Important behavior:
 
 - Resource IDs are repository-scoped issue numbers.
-- Every issue in the repository is a resource. Pull requests are not.
-- Issue and comment bodies are stored and returned exactly as supplied.
+- Every non-pull-request issue in the repository is a GiaDB resource.
+- The SDK passes issue and comment bodies through unchanged, without injecting GiaDB metadata or rewriting content.
 - `Get` does not load comments. Use paginated `ListSections`.
 - Paged methods return opaque continuation tokens.
 - `List` is the only resource collection/query method. It supports IDs, title
@@ -99,7 +104,7 @@ Important behavior:
 Callers may supply an authenticated `http.Client` instead of `Token`. GitHub
 App installation-token acquisition is intentionally outside the SDK.
 
-The example above is a real method sequence for this module. It is not a complete program: `ctx` is a `context.Context` supplied by the caller.
+The example above is a real method sequence for this module. It is not a complete program.
 
 ## Tests
 
