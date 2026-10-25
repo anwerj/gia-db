@@ -3,6 +3,14 @@
 This file governs how agents and contributors change the specification,
 contract pack, and derived SDKs. It does not define GiaDB semantics.
 
+## Mandatory monorepo policy
+
+Before making any repository changes, read [`CONSTITUTION.md`](CONSTITUTION.md) and follow it.
+
+`CONSTITUTION.md` defines mandatory rules for contract-first changes, data integrity, package isolation, conformance, CI, versioning, releases, and reporting. If instructions or repository contents conflict, do not guess: identify the conflict and report it before implementing behavior that would be inconsistent with the approved GiaDB specification.
+
+The canonical contract is under `db/`. Read the relevant version of `db/SPEC.md` and its conformance assets before changing SDK or MCP behavior.
+
 ## Naming
 
 - The project name MUST be written exactly as `GiaDB`.
@@ -12,18 +20,18 @@ contract pack, and derived SDKs. It does not define GiaDB semantics.
 
 ## Sources of truth
 
-- `SPEC.md` is the sole normative source for GiaDB semantics.
-- `contract/v0.1` is the machine-readable expression of `SPEC.md`; it MUST NOT
+- `db/SPEC.md` is the sole normative source for GiaDB semantics.
+- `db/contract/v0.1` is the machine-readable expression of `db/SPEC.md`; it MUST NOT
   add, remove, or reinterpret requirements.
 - `README.md` is explanatory and non-normative. It MUST NOT override
-  `SPEC.md`.
+  `db/SPEC.md`.
 - If these files disagree, contributors MUST correct the contract or
-  explanatory material to match `SPEC.md`; they MUST NOT create a second
+  explanatory material to match `db/SPEC.md`; they MUST NOT create a second
   semantic rule here.
 
 ## Changing GiaDB
 
-- A semantic change MUST update `SPEC.md` first.
+- A semantic change MUST update `db/SPEC.md` first.
 - The same change MUST update every affected schema, example, conformance
   scenario, manifest checksum, and SDK.
 - A documentation-only change MUST NOT silently alter contract behavior.

@@ -1,0 +1,1 @@
+GET {{SERVER_URL}}/get?id={{$global.id}}

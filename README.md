@@ -1,7 +1,5 @@
 # GiaDB
 
-<img src="assets/gia-db-black.png" alt="GiaDB logo" width="180" align="left">
-
 ### What if your database was already sitting in GitHub?
 
 GiaDB (GitHub Issues As Database) is a lightweight database abstraction that uses GitHub Issues for storage and the GitHub API for access and queries.
@@ -10,7 +8,12 @@ GiaDB (GitHub Issues As Database) is a lightweight database abstraction that use
 
 No database server. No `git clone`. No commits, branches, or local storage to manage.
 
-Just GitHub APIs.
+Just GitHub APIs. Introducing ...
+
+<p align="center">
+  <img src="assets/gia-neon-large.png" alt="GiaDB" width="280">
+</p>
+
 
 ## Why?
 
@@ -31,7 +34,7 @@ Yet even a small database usually means provisioning storage, managing backups, 
 
 A repository scopes the database. **Resources are stored in GitHub Issues and accessed through GitHub APIs—not through Git, commits, or repository files.**
 
-Every non-pull-request issue in the repository is a GiaDB resource. Labels are optional metadata. Issue and comment bodies are passed through unchanged, without GiaDB injecting or rewriting content.
+Every non-pull-request issue in the repository is a GiaDB resource. Labels are optional metadata. The SDK passes issue and comment bodies through unchanged, without injecting GiaDB metadata or rewriting content.
 
 | GitHub | GiaDB |
 |---|---|
@@ -45,6 +48,20 @@ Every non-pull-request issue in the repository is a GiaDB resource. Labels are o
 | Open / closed | Active / forgotten |
 
 GiaDB defines the semantics. Implementations use GitHub APIs to work with the data.
+
+`db/SPEC.md` and the versioned contract under `db/contract/` are the contract. SDK behavior follows that contract; an implementation does not define a second one.
+
+## Repository
+
+| Path | What it is |
+|---|---|
+| [`db/`](db/) | Specification, conformance assets, and validation tools |
+| [`go/`](go/) | Go SDK, module `github.com/anwerj/gia-db/go` |
+| [`CONSTITUTION.md`](CONSTITUTION.md) | Repository policy for maintainers and coding agents |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) | Local checks and review expectations |
+| [`RELEASING.md`](RELEASING.md) | Component tags and release rules |
+
+Python, TypeScript, and MCP are planned and are not implemented here.
 
 ## What is it for?
 
@@ -66,9 +83,10 @@ That's the kind of problem GiaDB is meant to explore.
 
 GiaDB is defined by a language-neutral specification. The goal is for different implementations to follow the same contract.
 
-- **Go:** [`gia-go`](https://github.com/anwerj/gia-go) — reference implementation
-- **Python:** `gia-py` — planned
-- **TypeScript:** `gia-ts` — planned
+- **Go:** [`go/`](go/) — implemented. Module path `github.com/anwerj/gia-db/go`.
+- **Python:** `gia-py` — planned, not implemented
+- **TypeScript:** `gia-ts` — planned, not implemented
+- **MCP:** `gia-mcp` — planned, not implemented
 
 The following is illustrative pseudocode, not a language-specific API signature.
 
@@ -81,8 +99,8 @@ resource = db.Update(id, fields)
 
 page = db.List(filters, pageSize, continuationToken?)
 
-section = db.NewSection(id, body)
-page = db.ListSections(id, pageSize, continuationToken?)
+section = db.NewSection(resourceID, body)
+page = db.ListSections(resourceID, pageSize, continuationToken?)
 
 db.Forget(id)
 db.Reopen(id)

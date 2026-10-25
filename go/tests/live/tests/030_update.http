@@ -1,0 +1,7 @@
+PUT {{SERVER_URL}}/update
+  ?id={{$global.id}}
+  &update=["body","labels"]
+  &labels=["test"]
+Content-Type: text/plain
+
+Updated body.
