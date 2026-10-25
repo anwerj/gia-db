@@ -13,8 +13,6 @@ from jsonschema import Draft202012Validator, FormatChecker
 
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT = ROOT / "contract" / "v0.1"
-MARKER = "<!-- gia-db:v1 -->"
-PREFIX = MARKER + "\n"
 
 
 def load(name: str) -> Any:
@@ -33,100 +31,39 @@ def validate_definition(schema: dict[str, Any], name: str, value: Any) -> None:
     ).validate(value)
 
 
-def decode_body(raw: str) -> tuple[str, bool]:
-    if not raw.startswith(PREFIX):
-        return "", False
-    return raw[len(PREFIX) :], True
-
-
-def encode_body(logical: str) -> str:
-    return PREFIX + logical
-
-
 def classify_issue(value: dict[str, Any]) -> dict[str, Any]:
     if "pull_request" in value:
         return {"kind": "non_resource"}
-    logical, recognized = decode_body(value.get("raw_body", value.get("body", "")))
-    if not recognized:
-        return {"kind": "non_resource"}
-    return {"kind": "resource", "body": logical}
-
-
-def evaluate_marker(scenario_id: str, value: dict[str, Any]) -> dict[str, Any]:
-    if scenario_id == "marker.noncanonical":
-        return {
-            "kinds": [
-                "resource" if decode_body(raw)[1] else "non_resource"
-                for raw in value["raw_bodies"]
-            ]
-        }
-
-    if scenario_id in {"marker.update_preserves_one", "marker.update_embedded"}:
-        raw = encode_body(value["logical_body"])
-        logical, recognized = decode_body(raw)
-        if not recognized:
-            raise AssertionError("encoded body lost its canonical prefix")
-        return {
-            "raw_body": raw,
-            "body": logical,
-            "marker_count": raw.count(MARKER),
-        }
-
-    if scenario_id.startswith("marker.extract_"):
-        logical, recognized = decode_body(value["raw_body"])
-        if not recognized:
-            return {"error": "not_found"}
-        return {"body": logical}
-
-    return classify_issue(value)
+    return {"kind": "resource", "body": value.get("body", "")}
 
 
 def evaluate(scenario: dict[str, Any]) -> dict[str, Any]:
     scenario_id = scenario["id"]
     value = scenario["input"]
 
-    if scenario_id.startswith("marker."):
-        return evaluate_marker(scenario_id, value)
+    if scenario_id == "body.unchanged":
+        return {"bodies": list(value["bodies"])}
 
-    if scenario_id == "labels.keep_identity":
-        logical, recognized = decode_body(value["raw_body"])
-        if not recognized:
-            return {"error": "not_found"}
+    if scenario_id == "issue.any_body":
+        return classify_issue(value)
+
+    if scenario_id == "labels.do_not_change_body":
         return {
             "id": value["id"],
-            "raw_body": value["raw_body"],
-            "body": logical,
+            "body": value["body"],
             "labels": list(value["labels"]),
         }
 
-    if scenario_id == "mutation.unmarked_rejected":
-        if decode_body(value["raw_body"])[1]:
+    if scenario_id == "mutation.pull_request_rejected":
+        if "pull_request" not in value:
             return {"mutated": True}
         return {"error": "not_found", "mutated": False}
-
-    if scenario_id == "mutation.lost_marker":
-        if not value.get("accepted"):
-            return {"error": "outcome_unknown"}
-        if decode_body(value.get("raw_body", ""))[1]:
-            return {"valid": True}
-        result = {
-            "error": "invalid_resource",
-            "outcome": "applied",
-        }
-        if "id" in value:
-            result["resource_id"] = value["id"]
-        return result
 
     if scenario_id == "list.pull_request":
         return classify_issue(value)
 
     if scenario_id == "list.empty_filtered_page_continues":
-        count = 0
-        for item in value["items"]:
-            if "pull_request" in item:
-                continue
-            if decode_body(item.get("body", ""))[1]:
-                count += 1
+        count = sum(1 for item in value["items"] if "pull_request" not in item)
         result = {
             "item_count": count,
             "exhausted": "next_token" not in value,

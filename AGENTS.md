@@ -9,7 +9,6 @@ contract pack, and derived SDKs. It does not define GiaDB semantics.
 - No alternative capitalization may be used as the project name.
 - Existing repository and package identifiers such as `gia-db` and `gia-go`
   MUST retain their defined forms.
-- The resource marker identifier `gia-db:v1` is defined by `SPEC.md`.
 
 ## Sources of truth
 

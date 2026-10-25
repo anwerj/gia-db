@@ -3,142 +3,69 @@
   "version": "0.1.0",
   "scenarios": [
     {
-      "id": "marker.recognized",
+      "id": "body.unchanged",
       "input": {
-        "raw_body": "<!-- gia-db:v1 -->\nPrefer direct language."
+        "bodies": [
+          "",
+          "# Title\n\nParagraph\n",
+          "{\"ok\":true}",
+          "<!-- note -->"
+        ]
       },
       "expect": {
-        "kind": "resource",
-        "body": "Prefer direct language."
+        "bodies": [
+          "",
+          "# Title\n\nParagraph\n",
+          "{\"ok\":true}",
+          "<!-- note -->"
+        ]
       }
     },
     {
-      "id": "marker.unmarked",
-      "input": { "raw_body": "An ordinary issue" },
-      "expect": { "kind": "non_resource" }
-    },
-    {
-      "id": "marker.embedded_not_adopted",
-      "input": { "raw_body": "notes\n<!-- gia-db:v1 -->\n" },
-      "expect": { "kind": "non_resource" }
-    },
-    {
-      "id": "marker.labels_do_not_identify",
+      "id": "issue.any_body",
       "input": {
-        "raw_body": "An ordinary issue",
+        "number": 4,
+        "body": "",
         "labels": ["bug", "docs"]
       },
-      "expect": { "kind": "non_resource" }
+      "expect": { "kind": "resource", "body": "" }
     },
     {
-      "id": "marker.noncanonical",
-      "input": {
-        "raw_bodies": [
-          "<!-- gia-db:v1 -->",
-          "<!-- gia-db:v1 -->\r\nhello",
-          " <!-- gia-db:v1 -->\nhello",
-          "<!-- gia-db:v2 -->\nhello",
-          "<!--  gia-db:v1 -->\nhello"
-        ]
-      },
-      "expect": {
-        "kinds": [
-          "non_resource",
-          "non_resource",
-          "non_resource",
-          "non_resource",
-          "non_resource"
-        ]
-      }
-    },
-    {
-      "id": "marker.extract_exact",
-      "input": {
-        "raw_body": "<!-- gia-db:v1 -->\n# Title\n\nParagraph\n"
-      },
-      "expect": { "body": "# Title\n\nParagraph\n" }
-    },
-    {
-      "id": "marker.extract_empty",
-      "input": { "raw_body": "<!-- gia-db:v1 -->\n" },
-      "expect": { "body": "" }
-    },
-    {
-      "id": "marker.extract_json",
-      "input": { "raw_body": "<!-- gia-db:v1 -->\n{\"ok\":true}" },
-      "expect": { "body": "{\"ok\":true}" }
-    },
-    {
-      "id": "marker.extract_embedded",
-      "input": {
-        "raw_body": "<!-- gia-db:v1 -->\nkeep <!-- gia-db:v1 --> inline"
-      },
-      "expect": { "body": "keep <!-- gia-db:v1 --> inline" }
-    },
-    {
-      "id": "marker.update_preserves_one",
-      "input": { "logical_body": "Updated body." },
-      "expect": {
-        "raw_body": "<!-- gia-db:v1 -->\nUpdated body.",
-        "body": "Updated body.",
-        "marker_count": 1
-      }
-    },
-    {
-      "id": "marker.update_embedded",
-      "input": { "logical_body": "see <!-- gia-db:v1 --> later" },
-      "expect": {
-        "raw_body": "<!-- gia-db:v1 -->\nsee <!-- gia-db:v1 --> later",
-        "body": "see <!-- gia-db:v1 --> later",
-        "marker_count": 2
-      }
-    },
-    {
-      "id": "labels.keep_identity",
+      "id": "labels.do_not_change_body",
       "input": {
         "id": 21,
-        "raw_body": "<!-- gia-db:v1 -->\nPrimary",
+        "body": "Primary",
         "before": ["docs", "custom"],
         "labels": ["personal"]
       },
       "expect": {
         "id": 21,
-        "raw_body": "<!-- gia-db:v1 -->\nPrimary",
         "body": "Primary",
         "labels": ["personal"]
       }
     },
     {
-      "id": "mutation.unmarked_rejected",
-      "input": { "raw_body": "ordinary", "operation": "update" },
-      "expect": { "error": "not_found", "mutated": false }
-    },
-    {
-      "id": "mutation.lost_marker",
+      "id": "mutation.pull_request_rejected",
       "input": {
-        "id": 44,
-        "accepted": true,
-        "raw_body": "Updated body."
+        "number": 8,
+        "pull_request": {},
+        "operation": "update"
       },
-      "expect": {
-        "error": "invalid_resource",
-        "outcome": "applied",
-        "resource_id": 44
-      }
+      "expect": { "error": "not_found", "mutated": false }
     },
     {
       "id": "list.pull_request",
       "input": {
         "number": 7,
         "pull_request": {},
-        "body": "<!-- gia-db:v1 -->\nnot a resource"
+        "body": "not a resource"
       },
       "expect": { "kind": "non_resource" }
     },
     {
       "id": "list.empty_filtered_page_continues",
       "input": {
-        "items": [{ "number": 8, "body": "ordinary" }],
+        "items": [{ "number": 8, "pull_request": {}, "body": "not a resource" }],
         "next_token": "opaque-next"
       },
       "expect": {

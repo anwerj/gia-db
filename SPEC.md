@@ -43,49 +43,18 @@ Pull requests are not resources. Adapters using REST Issues endpoints or search
 MUST reject any item with a `pull_request` member. GraphQL adapters MUST
 type-check search nodes and SHOULD use `Repository.issues` for enumeration.
 
-## 3. Resource marker
+## 3. Resources and bodies
 
-The marker format recognized by this specification is `v1`. That format version
-is independent of the `0.1.0` contract version.
+Every issue in the configured repository is a GiaDB resource, except a pull
+request. No title, body, comment, or label identifies a resource.
 
-The canonical marker line is this exact character sequence:
+The issue body and every comment body are caller-defined. SDKs MUST send and
+return those bytes unchanged. An empty body is valid and MUST stay empty. An
+SDK MUST NOT insert, remove, wrap, or rewrite a prefix, suffix, comment, or
+other hidden content in a body.
 
-```text
-<!-- gia-db:v1 -->
-```
-
-The canonical prefix is that line followed by one line feed, U+000A. No
-leading byte-order mark, space, or carriage return is part of a valid prefix.
-
-An issue is a GiaDB resource only when it is not a pull request and its raw
-body begins with the canonical prefix. The logical body is the exact remainder
-and MAY be empty. SDKs MUST return the logical body. The prefix MUST NOT appear
-in the returned body.
-
-Any other raw body is an ordinary issue. This includes a missing marker, a
-marker line without the required line feed, a carriage return, different
-spacing, another marker version such as `<!-- gia-db:v2 -->`, and the marker
-text appearing anywhere except the canonical prefix. An ordinary issue MUST be
-omitted from `List`. A resource operation addressed to it MUST return
-`not_found` and MUST NOT send a mutation or return its comments as sections.
-
-A copy of the marker text inside the logical body is caller content. Encoding
-MUST prepend one canonical prefix and MUST NOT search, remove, or rewrite later
-copies. Decoding MUST remove only the canonical prefix.
-
-Create MUST store the canonical prefix followed by the caller's logical body.
-Callers supply the logical body, not the raw issue body. An empty logical body
-is valid and is stored as the prefix alone.
-
-A body update MUST store the canonical prefix followed by the supplied logical
-body. An update that omits the body MUST leave the raw issue body unchanged and
-MUST NOT send a body field.
-
-GitHub's rendered Markdown view usually hides an HTML comment. The raw issue
-editor, the issue API, and other clients can display or change it. GiaDB does
-not require the marker to be invisible, and it does not require every client to
-preserve it. If a later GitHub edit removes or changes the prefix, the issue is
-no longer a resource. Its remaining body, comments, and history stay in GitHub.
+An update that omits the body MUST leave the stored issue body unchanged and
+MUST NOT send a body field. Changing labels MUST NOT change the body.
 
 ## 4. Labels
 
@@ -94,23 +63,20 @@ resource, assign it a type, or change its ID. No label text or prefix is
 reserved. A resource MAY have no labels.
 
 Supplying `labels` to Update replaces the complete label set. Omitting `labels`
-leaves the current labels unchanged. Changing labels MUST NOT add, remove, or
-rewrite the body marker.
+leaves the current labels unchanged.
 
 Label provisioning remains an administrative GitHub operation. Creation sends
 the title, raw body, and any caller-supplied labels in one issue-creation
 request.
 
-## 5. Resources and sections
+## 5. Sections
 
-The logical body is the primary content. It MAY contain text, Markdown, JSON,
-or another format selected by the caller. The stored issue body is the
-canonical prefix plus that logical body.
+The issue body is the primary content. It MAY contain text, Markdown, JSON, or
+another format selected by the caller.
 
 Comments are first-class sections. A section has its own comment ID, body,
-author, and timestamps. Section bodies are not resource bodies and MUST NOT be
-given the resource marker by the SDK. Reading a resource MUST NOT imply that
-any comments were loaded. Section reads use a separate paginated operation.
+author, and timestamps. Reading a resource MUST NOT imply that any comments
+were loaded. Section reads use a separate paginated operation.
 
 An SDK MUST NOT split, concatenate, truncate, or reinterpret section bodies.
 The server is authoritative for size limits. An oversized body or section MUST
@@ -121,13 +87,13 @@ not immutable: edits made through GitHub remain visible.
 
 ## 6. Operations
 
-- **Create** creates one active issue from a title, logical body, and optional
-  labels. The SDK inserts the canonical prefix.
+- **Create** creates one active issue from a title, body, and optional labels.
+  The body is stored exactly as supplied.
 - **Get** retrieves one issue by number, regardless of active or forgotten
-  state. An ordinary issue or pull request is `not_found`.
+  state. A pull request is `not_found`.
 - **Update** patches supported mutable issue fields. Omitted fields remain
-  unchanged. A supplied body replaces the logical body and is stored with one
-  canonical prefix. A supplied label set replaces the complete label set.
+  unchanged. A supplied body replaces the stored body exactly. A supplied
+  label set replaces the complete label set.
 - **NewSection** creates one comment.
 - **ListSections** lists sections and supports pagination.
 - **List** lists and searches resources. It supports pagination and filters
@@ -137,10 +103,11 @@ not immutable: edits made through GitHub remain visible.
 - **Reopen** opens a closed issue without sending a body or changing labels.
 
 Before Update, NewSection, ListSections, Forget, or Reopen, an SDK MUST read
-the target issue and MUST reject an ordinary issue or pull request with
-`not_found` before performing that operation. That read and the following
-GitHub request are separate and are not atomic. Forget and Reopen MUST NOT
-delete or rewrite the marker. Forgetting does not destroy historical content.
+the target and MUST reject a pull request with `not_found` before performing
+that operation. That read checks only whether the target is a pull request. It
+MUST NOT modify the body. The read and the following GitHub request are
+separate and are not atomic. Forget and Reopen MUST NOT send a body.
+Forgetting does not destroy historical content.
 
 There is no destroy operation. List defaults to active resources. The public
 state filters are `active`, `forgotten`, and `all`. Adapters map `active` and
@@ -148,29 +115,20 @@ state filters are `active`, `forgotten`, and `all`. Adapters map `active` and
 all-state enumeration requires an explicit state filter. Exact ID lookup is the
 explicit historical read path.
 
-Mutations MUST validate the resource returned by GitHub. If GitHub accepts a
-mutation but the returned issue does not have the canonical prefix, the result
-MUST be `invalid_resource` with outcome `applied`. When the issue number is
-known, the error MUST include it as `resource_id`. That result MUST NOT be
-reported as `not_applied`.
-
 ## 7. Query and pagination
 
 `List` is the only collection/query operation. Queries map to GitHub-native
 capabilities: exact issue numbers, title matching, state, labels, timestamps,
 supported sorting, and pagination.
 
-`List` MUST read raw issue bodies and apply the marker rule locally. A label
-filter or GitHub search term MUST NOT be used to decide whether an issue is a
-resource. GitHub search is not a reliable index of HTML comments. Search-backed
-filters still use GitHub search, after which every hit MUST be accepted or
-rejected with the marker rule.
+Resource identity does not depend on body content. Search-backed filters use
+GitHub search, after which pull requests MUST be rejected. A label or body
+MUST NOT be used to decide whether an issue is a resource.
 
 Every page MUST contain an opaque continuation token or an explicit indication
 that no next page exists. Tokens are adapter-owned, unstable across query
 changes, and MUST NOT be interpreted by callers. A short or empty page can
-still have a continuation token after ordinary issues and pull requests are
-filtered.
+still have a continuation token after pull requests are filtered.
 
 When `List` uses GitHub issue search for matching, it MUST add repository and
 issue-only constraints. Search-backed listing is discovery, not authoritative
@@ -186,9 +144,8 @@ matching or read-after-write consistency. A database scan without text filters
 uses repository issue enumeration. Enumeration does not provide snapshot
 isolation while GitHub changes.
 
-Body and comment-text matching are intentionally deferred from v0.1. The
-resource marker is an identity prefix, not a text-search feature. SDKs MUST
-NOT expose body or comment-text matching as portable v0.1 query capabilities.
+Body and comment-text matching are intentionally deferred from v0.1. SDKs MUST
+NOT expose them as portable v0.1 query capabilities.
 
 ## 8. Consistency and concurrency
 
@@ -233,8 +190,8 @@ REST clients MUST send `Accept: application/vnd.github+json` and pin
 status and GraphQL errors.
 
 A GiaDB SDK MUST provide a thin interface over GitHub APIs. It MUST implement
-the resource marker, section, lifecycle, listing, and pagination semantics
-defined by this specification.
+the resource, section, lifecycle, listing, and pagination semantics defined by
+this specification. Issue and comment bodies MUST pass through unchanged.
 
 The core SDK MUST NOT automatically retry, delay, queue, throttle, pace, or
 serialize requests. It MUST NOT impose a caller concurrency limit. This applies
@@ -249,10 +206,9 @@ to retry.
 Pagination MUST be explicit. A paginated operation returns one page and an
 opaque continuation token. The SDK MUST NOT automatically load every page.
 
-An operation MAY perform an additional GitHub read when required to verify
-that the target issue is a GiaDB resource before mutation or before returning
-its sections. Such a read is a correctness check, not caching or
-synchronization.
+An operation MAY perform an additional GitHub read when required to reject a
+pull request before mutation or before returning its sections. Such a read is
+a correctness check, not caching or synchronization.
 
 Conditional requests MAY be supported when explicitly requested by the
 caller. A `304` without cached content is an explicit `not_modified` result,

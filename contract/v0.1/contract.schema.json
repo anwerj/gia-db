@@ -8,7 +8,7 @@
     },
     "resource": {
       "type": "object",
-      "$comment": "body is the logical body with the canonical marker prefix removed",
+      "$comment": "body is the caller-defined issue body, stored and returned unchanged",
       "additionalProperties": false,
       "required": [
         "id",
@@ -143,7 +143,6 @@
         "outcome": { "enum": ["not_applied", "applied", "unknown"] },
         "status": { "type": "integer", "minimum": 0 },
         "request_id": { "type": "string" },
-        "resource_id": { "type": "integer", "minimum": 1 },
         "rate": { "$ref": "#/$defs/rate" }
       }
     }
