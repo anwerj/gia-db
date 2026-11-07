@@ -1,0 +1,15 @@
+HTTP/1.1 200 OK
+Content-Type: application/json
+Link: <https://api.github.com/repos/acme/db/issues/14/comments?page=2&per_page=10>; rel="next"
+
+[
+  {
+    "id": 501,
+    "body": "  keep\n\n\u2192 markdown\n\n`code`\n{\"marker\":true}\n",
+    "user": {
+      "login": "octocat"
+    },
+    "created_at": "2026-01-02T03:04:05Z",
+    "updated_at": "2026-01-02T03:04:05Z"
+  }
+]

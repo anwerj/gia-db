@@ -1,0 +1,14 @@
+HTTP/1.1 200 OK
+Content-Type: application/json
+ETag: "etag-4"
+X-GitHub-Request-Id: req-4
+
+{
+  "number": 4,
+  "title": "Example",
+  "body": "Body",
+  "state": "open",
+  "labels": [{"name": "docs"}],
+  "created_at": "2026-01-02T03:04:05Z",
+  "updated_at": "2026-01-02T03:04:05Z"
+}

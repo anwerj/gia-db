@@ -42,7 +42,7 @@ The intended repository layout is:
 - `db/`: specification, versioned contract/schema/conformance assets, spec tooling.
 - `go/`: Go SDK, its module file, tests, and Go-specific docs.
 - `py/`: Python SDK as an independently buildable Python distribution.
-- `mcp/`: Python MCP adapter as an independently buildable distribution depending on `gia-py`.
+- `mcp/`: Go MCP adapter `gia-mcp`, independently buildable with its own `go.mod` and depending on the public Go SDK.
 - `ts/`: TypeScript SDK as an independently buildable npm package.
 - `.github/workflows/`: CI and release workflows.
 - root docs: project-level README, constitution, contribution and release guidance.
@@ -51,9 +51,9 @@ Rules:
 
 1. Each implementation owns its language-specific dependencies, tests, package metadata, build, and release lifecycle.
 2. Do not create a root-level build/dependency setup that forces all languages to use the same toolchain.
-3. Go must build/test from `go/` with its own `go.mod`.
-4. Python SDK and MCP must each have their own `pyproject.toml`, environment/dependency definition, and lockfile. Do not add every Python dependency to one global list.
-5. During local development, MCP may use a local path override for the Python SDK. Published metadata must depend on a versioned package resolvable by users, not a filesystem path.
+3. The Go SDK must build and test from `go/` with its own `go.mod`.
+4. The MCP adapter must build and test from `mcp/` with its own `go.mod`. During local development it may use a `replace` directive for the Go SDK. A published MCP module must depend on a versioned Go SDK module resolvable by users, not a filesystem path.
+5. The Python SDK, when added, must have its own `pyproject.toml`, environment, dependency definition, and lockfile. Do not add every Python dependency to one global list.
 6. TypeScript must use its own npm-compatible metadata and lockfile. It is not required to participate in the Python environment.
 7. No component may import another component's private source files or rely on another component's development environment. Cross-component coupling must happen through a declared public package dependency or the shared GiaDB contract.
 8. Keep changes scoped. A Go change should not reformat or rewrite Python/TypeScript code; a documentation-only change should not trigger broad refactoring.
@@ -72,13 +72,14 @@ Rules:
 ## Article 6 — MCP adapter boundary
 
 1. `gia-mcp` is an adapter, not a second GiaDB implementation.
-2. All database operations must delegate to the public `gia-py` SDK.
+2. All database operations must delegate to the public Go SDK `github.com/anwerj/gia-db/go`.
 3. MCP code may define tool names, input/output schemas, argument validation required by the MCP protocol, and conversion of SDK results/errors to MCP responses.
 4. MCP code must not call GitHub APIs directly, duplicate pagination, recreate SDK error classification, reinterpret resource state, rewrite bodies, or implement separate search behavior.
-5. The initial transport is the approved Streamable HTTP design. Unless explicitly changed by a reviewed decision, do not add stdio or claim compatibility with clients that require stdio-spawned servers.
-6. A local server must bind to loopback by default. Binding to non-loopback interfaces must require explicit configuration and be clearly documented with its security implications.
-7. `uvx gia-mcp` should install/run the Python distribution in an isolated environment and must not require a Go compiler/runtime or a checked-out source repository.
+5. The transports are stdio and Streamable HTTP. Both must serve the same registered MCP server. Do not implement MCP transport protocol handling in this repository.
+6. The HTTP server must bind to loopback by default. A non-loopback listen address requires the explicit `--allow-non-loopback` flag and must be documented with its security implications. Leave DNS-rebinding protection enabled for loopback connections.
+7. `gia-mcp` is the Go binary built from `mcp/`. It must not require a Python or JavaScript runtime, and this adapter must not add npm or PyPI launchers.
 8. The server is a long-running process. Document its host/port, endpoint URL, startup/shutdown behavior, and how clients connect. Do not claim it automatically starts as a background service unless that behavior is implemented.
+9. Stdio protocol messages go to stdout. Diagnostics go to stderr.
 
 ## Article 7 — Python and TypeScript ecosystem rules
 
@@ -106,7 +107,7 @@ Rules:
 
 1. CI jobs must be component-isolated and follow the documented path/dependency matrix.
 2. Changes under `db/` are cross-cutting and must trigger conformance validation for all implemented SDKs.
-3. Changes under `py/` must trigger relevant `mcp/` integration checks because MCP depends on the Python SDK.
+3. Changes under `go/` or `mcp/` must run the MCP checks, because the MCP adapter depends on the Go SDK.
 4. Changes to one implementation should not run unrelated language builds except where the dependency/contract matrix requires them.
 5. Do not use workflow-level path filters that cause a required workflow to be absent and leave a required check pending. Prefer an always-triggered CI workflow with job-level path conditions and a stable final summary job.
 6. The summary job must fail when any applicable job fails or is unexpectedly cancelled. It may treat a component job as skipped only when the path detector confirms that the component is unaffected.

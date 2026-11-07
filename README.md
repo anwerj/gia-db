@@ -57,11 +57,12 @@ GiaDB defines the semantics. Implementations use GitHub APIs to work with the da
 |---|---|
 | [`db/`](db/) | Specification, conformance assets, and validation tools |
 | [`go/`](go/) | Go SDK, module `github.com/anwerj/gia-db/go` |
+| [`mcp/`](mcp/) | Go MCP adapter, command `gia-mcp` |
 | [`CONSTITUTION.md`](CONSTITUTION.md) | Repository policy for maintainers and coding agents |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Local checks and review expectations |
 | [`RELEASING.md`](RELEASING.md) | Component tags and release rules |
 
-Python, TypeScript, and MCP are planned and are not implemented here.
+Python and TypeScript are planned and are not implemented here. The MCP adapter is the Go command in [`mcp/`](mcp/).
 
 ## What is it for?
 
@@ -84,9 +85,9 @@ That's the kind of problem GiaDB is meant to explore.
 GiaDB is defined by a language-neutral specification. The goal is for different implementations to follow the same contract.
 
 - **Go:** [`go/`](go/) — implemented. Module path `github.com/anwerj/gia-db/go`.
+- **MCP:** [`mcp/`](mcp/) — implemented. Command `gia-mcp`. It adapts the Go SDK and does not define GiaDB semantics.
 - **Python:** `gia-py` — planned, not implemented
 - **TypeScript:** `gia-ts` — planned, not implemented
-- **MCP:** `gia-mcp` — planned, not implemented
 
 The following is illustrative pseudocode, not a language-specific API signature.
 

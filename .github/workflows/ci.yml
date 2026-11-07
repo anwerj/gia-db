@@ -16,6 +16,7 @@ jobs:
     outputs:
       db: ${{ steps.filter.outputs.db }}
       go: ${{ steps.filter.outputs.go }}
+      mcp: ${{ steps.filter.outputs.mcp }}
       workflows: ${{ steps.filter.outputs.workflows }}
     steps:
       - name: Checkout
@@ -34,6 +35,7 @@ jobs:
           mark_all() {
             echo "db=true" >> "$GITHUB_OUTPUT"
             echo "go=true" >> "$GITHUB_OUTPUT"
+            echo "mcp=true" >> "$GITHUB_OUTPUT"
             echo "workflows=true" >> "$GITHUB_OUTPUT"
           }
           if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
@@ -53,6 +55,7 @@ jobs:
           git diff --name-only "$BASE_SHA" "$HEAD_SHA" > "$RUNNER_TEMP/changed.txt"
           db=false
           go_changed=false
+          mcp_changed=false
           workflows=false
           if grep -q '^db/' "$RUNNER_TEMP/changed.txt"; then
             db=true
@@ -60,12 +63,17 @@ jobs:
           if grep -q '^go/' "$RUNNER_TEMP/changed.txt"; then
             go_changed=true
           fi
+          if grep -q '^mcp/' "$RUNNER_TEMP/changed.txt" || grep -q '^go/' "$RUNNER_TEMP/changed.txt"; then
+            mcp_changed=true
+          fi
           if grep -q '^\.github/workflows/' "$RUNNER_TEMP/changed.txt"; then
             workflows=true
+            mcp_changed=true
           fi
           {
             echo "db=${db}"
             echo "go=${go_changed}"
+            echo "mcp=${mcp_changed}"
             echo "workflows=${workflows}"
           } >> "$GITHUB_OUTPUT"
           echo "Changed files:"
@@ -140,8 +148,37 @@ jobs:
       - name: Test
         run: go test -race ./...
 
+  mcp:
+    needs: changes
+    if: needs.changes.outputs.mcp == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mcp
+    steps:
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+
+      - name: Set up Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: "1.26.x"
+          cache: true
+          cache-dependency-path: |
+            mcp/go.sum
+            go/go.sum
+
+      - name: Check formatting
+        run: test -z "$(gofmt -l .)"
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test
+        run: go test -race ./...
+
   summary:
-    needs: [changes, contract, go]
+    needs: [changes, contract, go, mcp]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -150,23 +187,29 @@ jobs:
           CHANGES: ${{ needs.changes.result }}
           CONTRACT: ${{ needs.contract.result }}
           GO_RESULT: ${{ needs.go.result }}
+          MCP_RESULT: ${{ needs.mcp.result }}
           DB: ${{ needs.changes.outputs.db }}
           GO_CHANGED: ${{ needs.changes.outputs.go }}
+          MCP_CHANGED: ${{ needs.changes.outputs.mcp }}
           WORKFLOWS: ${{ needs.changes.outputs.workflows }}
         run: |
           set -eu
-          echo "changes=${CHANGES} contract=${CONTRACT} go=${GO_RESULT} db=${DB} go_changed=${GO_CHANGED} workflows=${WORKFLOWS}"
+          echo "changes=${CHANGES} contract=${CONTRACT} go=${GO_RESULT} mcp=${MCP_RESULT} db=${DB} go_changed=${GO_CHANGED} mcp_changed=${MCP_CHANGED} workflows=${WORKFLOWS}"
           if [ "$CHANGES" != "success" ]; then
             echo "changes job must succeed"
             exit 1
           fi
           contract_required=false
           go_required=false
+          mcp_required=false
           if [ "$DB" = "true" ] || [ "$WORKFLOWS" = "true" ]; then
             contract_required=true
           fi
           if [ "$GO_CHANGED" = "true" ] || [ "$DB" = "true" ] || [ "$WORKFLOWS" = "true" ]; then
             go_required=true
+          fi
+          if [ "$MCP_CHANGED" = "true" ]; then
+            mcp_required=true
           fi
           check() {
             name="$1"
@@ -183,8 +226,10 @@ jobs:
           }
           check contract "$CONTRACT" "$contract_required"
           check go "$GO_RESULT" "$go_required"
+          check mcp "$MCP_RESULT" "$mcp_required"
           {
             echo "### CI summary"
             echo "Contract required: \`${contract_required}\` (${CONTRACT})"
             echo "Go required: \`${go_required}\` (${GO_RESULT})"
+            echo "MCP required: \`${mcp_required}\` (${MCP_RESULT})"
           } >> "$GITHUB_STEP_SUMMARY"

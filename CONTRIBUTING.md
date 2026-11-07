@@ -11,10 +11,19 @@ python3 -m pip install -r db/tools/requirements.txt
 python3 db/tools/validate_contract.py
 ```
 
-Go checks run from `go/`:
+Go SDK checks run from `go/`:
 
 ```sh
 cd go
+test -z "$(gofmt -l .)"
+go vet ./...
+go test -race ./...
+```
+
+MCP checks run from `mcp/`:
+
+```sh
+cd mcp
 test -z "$(gofmt -l .)"
 go vet ./...
 go test -race ./...
@@ -33,11 +42,12 @@ GIADB_TEST_TOKEN=... GIADB_TEST_OWNER=... GIADB_TEST_REPOSITORY=... \
 
 | Changed paths | Required work |
 |---|---|
-| `db/**` | Contract validator, then Go formatting, `go vet`, and `go test -race ./...` |
-| `go/**` | Go formatting, `go vet`, and `go test -race ./...` |
-| `.github/workflows/**` | Contract validator and the Go checks |
+| `db/**` | Contract validator, then the Go SDK checks |
+| `go/**` | Go SDK checks and MCP checks |
+| `mcp/**` | MCP checks |
+| `.github/workflows/**` | Contract validator, Go SDK checks, and MCP checks |
 | Root docs only (`README.md`, `AGENTS.md`, `CONSTITUTION.md`, `CONTRIBUTING.md`, `RELEASING.md`) | Review the docs against `db/SPEC.md`. Component builds are not required |
 
-Python, MCP, and TypeScript are not in this repository yet. When they are added, a `py/` change must also run the MCP checks, and a `db/` change must run conformance for every implemented SDK.
+Python and TypeScript are not in this repository yet. A `db/` change must run conformance for every implemented SDK. The MCP adapter is checked with the Go SDK because it depends on that module.
 
 A behavior change starts in `db/SPEC.md` and `db/contract/`. Do not weaken conformance fixtures so an implementation passes.
