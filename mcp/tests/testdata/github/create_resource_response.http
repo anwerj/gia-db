@@ -1,0 +1,13 @@
+HTTP/1.1 201 Created
+Content-Type: application/json
+ETag: "etag-17"
+
+{
+  "number": 17,
+  "title": "Example",
+  "body": "  keep\n\n→ markdown\n\n`code`\n{\"marker\":true}\n",
+  "state": "open",
+  "labels": [{"name": "docs"}],
+  "created_at": "2026-01-02T03:04:05Z",
+  "updated_at": "2026-01-02T03:04:05Z"
+}
