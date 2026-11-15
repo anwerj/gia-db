@@ -5,7 +5,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"io"
 	"log"
 	"net"
 	"net/http"
@@ -36,6 +35,9 @@ type httpOptions struct {
 
 func main() {
 	if err := run(os.Args[1:]); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return
+		}
 		fmt.Fprintf(os.Stderr, "gia-mcp: %s\n", err)
 		os.Exit(1)
 	}
@@ -67,13 +69,13 @@ func run(args []string) error {
 
 func parseStdio(args []string) (config, error) {
 	fs := flag.NewFlagSet("stdio", flag.ContinueOnError)
-	fs.SetOutput(io.Discard)
+	fs.SetOutput(os.Stderr)
 	return parseConfig(fs, args)
 }
 
 func parseHTTP(args []string) (httpOptions, config, error) {
 	fs := flag.NewFlagSet("http", flag.ContinueOnError)
-	fs.SetOutput(io.Discard)
+	fs.SetOutput(os.Stderr)
 	listen := fs.String("listen", defaultListen, "Streamable HTTP listen address")
 	allowNonLoopback := fs.Bool("allow-non-loopback", false, "Allow a non-loopback listen address")
 	var origins []string

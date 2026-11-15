@@ -53,6 +53,7 @@ type ListOptions struct {
 	PageOptions
 	IDs          []int64
 	TitleMatch   string
+	TextMatch    string
 	CreatedSince *time.Time
 	UpdatedSince *time.Time
 	State        StateFilter

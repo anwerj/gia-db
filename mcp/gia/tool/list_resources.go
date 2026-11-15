@@ -26,6 +26,7 @@ func (t *ListResourcesTool) Define(context.Context) mcp.Tool {
 		mcp.WithString("page_token", mcp.Description("Opaque continuation token from a previous page. Do not interpret or modify it.")),
 		mcp.WithArray("ids", mcp.Description("Exact resource IDs, which are issue numbers."), mcp.WithIntegerItems()),
 		mcp.WithString("title_match", mcp.Description("Title text matched through GitHub search.")),
+		mcp.WithString("text_match", mcp.Description("Text matched across issue titles, bodies, and comments through GitHub search.")),
 		mcp.WithString("created_since", mcp.Description("RFC3339 lower bound for resource creation time.")),
 		mcp.WithString("updated_since", mcp.Description("RFC3339 lower bound for resource update time.")),
 		mcp.WithString("state", mcp.Description("Lifecycle filter."), mcp.Enum("active", "forgotten", "all")),
@@ -65,6 +66,11 @@ func (t *ListResourcesTool) Handle(ctx context.Context, request mcp.CallToolRequ
 		return invalidArgument(err.Error())
 	}
 	options.TitleMatch = titleMatch
+	textMatch, _, err := optionalString(args, "text_match")
+	if err != nil {
+		return invalidArgument(err.Error())
+	}
+	options.TextMatch = textMatch
 	createdSince, err := optionalTime(args, "created_since")
 	if err != nil {
 		return invalidArgument(err.Error())

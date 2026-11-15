@@ -1,14 +1,14 @@
 # GiaDB
 
-### What if your database was already sitting in GitHub?
+## Everything you need from a database.
+
+Free. Zero infrastructure. Built-in access control. Audit history. Secure. Built-in admin UI. Hosted on GitHub's infrastructure.
+
+**Up and running in 5 minutes.**
 
 GiaDB (GitHub Issues As Database) is a lightweight database abstraction that uses GitHub Issues for storage and the GitHub API for access and queries.
 
-<br clear="left">
-
-No database server. No `git clone`. No commits, branches, or local storage to manage.
-
-Just GitHub APIs. Introducing ...
+**Your data. Your GitHub. Zero database infrastructure.**
 
 <p align="center">
   <img src="assets/gia-neon-large.png" alt="GiaDB" width="280">
@@ -46,6 +46,8 @@ Every non-pull-request issue in the repository is a GiaDB resource. Labels are o
 | Body | Main content |
 | Comments | Sections or additional information |
 | Open / closed | Active / forgotten |
+
+Labels are the recommended search keys. Put the words you expect to query — topic, kind, owner, status — in labels, and keep the body as the content. `List` can require every supplied label to be present. `title_match` searches titles; `text_match` searches titles, bodies, and comments through GitHub Search. Search does not promise exact or immediate results.
 
 GiaDB defines the semantics. Implementations use GitHub APIs to work with the data.
 
@@ -122,7 +124,6 @@ GiaDB starts with a small set of operations over GitHub Issues. Future extension
 Planned extensions include:
 
 - **Issue relationships:** Create, list, and remove relationships between issues, supporting the relationship types exposed by GitHub.
-- **Repository label discovery:** List available repository labels so clients can discover and use existing metadata.
 - **Additional SDKs:** Implement the specification in more languages while keeping behavior consistent across implementations.
 
 These are planned extensions, not part of the current core API unless explicitly defined by the specification.

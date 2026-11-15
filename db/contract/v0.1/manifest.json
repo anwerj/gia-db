@@ -6,7 +6,7 @@
   "files": [
     {
       "path": "contract.schema.json",
-      "sha256": "550e632c792eca8aa7cf85e89530c42005fe770a37d3938c047dc846ebf43518"
+      "sha256": "3c36c56de7557ef29ab6cc816d17aef12a5d931c72d1ce840ce44ab577e4ced1"
     },
     {
       "path": "conformance.schema.json",
@@ -18,7 +18,7 @@
     },
     {
       "path": "conformance.json",
-      "sha256": "abc174919644338bc353fb9b5fdaa1e6af97d4c4f170df548d14d22bdffcfdd1"
+      "sha256": "5f6646dfa17c9e4be4f4d166ad41621c497e320971b3b811b0ef84c1dd044ae7"
     }
   ]
 }
