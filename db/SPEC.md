@@ -62,6 +62,12 @@ Labels are optional metadata chosen by the caller. They do not identify a
 resource, assign it a type, or change its ID. No label text or prefix is
 reserved. A resource MAY have no labels.
 
+Labels are the recommended search keys for `List`. Callers should put the
+words they expect to query, such as topic, kind, owner, or status, in labels
+and keep the body as the content. A label filter requires every supplied label
+to be present. Title and text matching follow GitHub search, as defined in
+section 7.
+
 Supplying `labels` to Update replaces the complete label set. Omitting `labels`
 leaves the current labels unchanged.
 
@@ -97,17 +103,16 @@ not immutable: edits made through GitHub remain visible.
 - **NewSection** creates one comment.
 - **ListSections** lists sections and supports pagination.
 - **List** lists and searches resources. It supports pagination and filters
-  for exact resource IDs, title matching, state, labels, timestamps, and
-  supported sorting.
+  for exact resource IDs, title matching, text matching, state, labels,
+  timestamps, and supported sorting.
 - **Forget** closes an issue without sending a body or changing labels.
 - **Reopen** opens a closed issue without sending a body or changing labels.
 
-Before Update, NewSection, ListSections, Forget, or Reopen, an SDK MUST read
-the target and MUST reject a pull request with `not_found` before performing
-that operation. That read checks only whether the target is a pull request. It
-MUST NOT modify the body. The read and the following GitHub request are
-separate and are not atomic. Forget and Reopen MUST NOT send a body.
-Forgetting does not destroy historical content.
+Update, NewSection, ListSections, Forget, and Reopen MUST call the relevant
+GitHub operation directly. They MUST NOT require a separate pre-flight read.
+If an operation's GitHub response identifies the target as a pull request, the
+SDK MUST return `not_found` and MUST NOT expose it as a resource. Forget and
+Reopen MUST NOT send a body. Forgetting does not destroy historical content.
 
 There is no destroy operation. List defaults to active resources. The public
 state filters are `active`, `forgotten`, and `all`. Adapters map `active` and
@@ -118,8 +123,9 @@ explicit historical read path.
 ## 7. Query and pagination
 
 `List` is the only collection/query operation. Queries map to GitHub-native
-capabilities: exact issue numbers, title matching, state, labels, timestamps,
-supported sorting, and pagination.
+capabilities: exact issue numbers, title matching, text matching across issue
+titles, bodies, and comments, state, labels, timestamps, supported sorting, and
+pagination.
 
 Resource identity does not depend on body content. Search-backed filters use
 GitHub search, after which pull requests MUST be rejected. A label or body
@@ -139,13 +145,11 @@ enumeration. Results MUST report:
 - whether more than GitHub's retrievable 1,000-result ceiling exists; and
 - the continuation token, when another retrievable page exists.
 
-Title matching through GitHub search does not guarantee exact substring
-matching or read-after-write consistency. A database scan without text filters
-uses repository issue enumeration. Enumeration does not provide snapshot
-isolation while GitHub changes.
-
-Body and comment-text matching are intentionally deferred from v0.1. SDKs MUST
-NOT expose them as portable v0.1 query capabilities.
+Title and text matching through GitHub search do not guarantee exact substring
+matching or read-after-write consistency. `title_match` searches titles only.
+`text_match` searches titles, bodies, and comments. A database scan without
+text filters uses repository issue enumeration. Enumeration does not provide
+snapshot isolation while GitHub changes.
 
 ## 8. Consistency and concurrency
 
@@ -205,10 +209,6 @@ to retry.
 
 Pagination MUST be explicit. A paginated operation returns one page and an
 opaque continuation token. The SDK MUST NOT automatically load every page.
-
-An operation MAY perform an additional GitHub read when required to reject a
-pull request before mutation or before returning its sections. Such a read is
-a correctness check, not caching or synchronization.
 
 Conditional requests MAY be supported when explicitly requested by the
 caller. A `304` without cached content is an explicit `not_modified` result,

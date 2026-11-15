@@ -1,4 +1,7 @@
-GET https://api.github.com/repos/acme/db/issues/13 HTTP/1.1
+POST https://api.github.com/repos/acme/db/issues/13/comments HTTP/1.1
 Accept: application/vnd.github+json
 Authorization: Bearer test-token
+Content-Type: application/json
 X-GitHub-Api-Version: 2026-03-10
+
+{"body":"section"}

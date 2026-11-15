@@ -2,7 +2,7 @@
 
 `gia-mcp` is the GiaDB MCP adapter. It exposes the current GiaDB operations as MCP tools and delegates every operation to the Go SDK, `github.com/anwerj/gia-db/go`. It does not call GitHub itself and it does not define GiaDB semantics.
 
-This adapter version is `0.1.0` in `gia/version.go`. It adapts specification 0.1. The binary is not published by a release workflow yet.
+This adapter version is `0.0.1` in `gia/version.go`. It adapts specification 0.1. The first release is prepared by the `mcp/v0.0.1` workflow.
 
 ## Requirements
 
@@ -13,6 +13,10 @@ go build -o gia-mcp .
 ```
 
 The module uses a local `replace` directive for the Go SDK. A published release must require a published SDK version instead of that path.
+
+For the `mcp/v0.0.1` release, publish `go/v0.0.1` first, then replace the local
+SDK dependency with `github.com/anwerj/gia-db/go v0.0.1` before creating the MCP
+tag.
 
 ## Configuration
 
@@ -36,7 +40,9 @@ gia-mcp stdio
 gia-mcp http --listen 127.0.0.1:8080
 ```
 
-No subcommand starts stdio. MCP messages use stdout. Diagnostics, including startup and MCP library errors, use stderr. The process stops on stdin EOF, SIGINT, or SIGTERM.
+The default command and the `stdio` subcommand start stdio. MCP messages use
+stdout. Diagnostics, including startup and MCP library errors, use stderr. The
+process stops on stdin EOF, SIGINT, or SIGTERM.
 
 HTTP uses Streamable HTTP at `/mcp`. The default listen address is `127.0.0.1:8080`, so the endpoint is `http://127.0.0.1:8080/mcp`. DNS-rebinding protection for loopback connections stays enabled. SIGINT and SIGTERM shut the server down.
 
@@ -60,6 +66,9 @@ The process stays in the foreground. It does not install itself as a background 
 | `reopen_resource` | Reopen |
 
 `id` on resource tools is the GitHub issue number. `resource_id` on section tools is that same issue number. A section's returned `id` is the comment id. Issue and comment bodies are passed through unchanged. List results keep the SDK continuation token, exhausted flag, reported total, incomplete flag, and truncated flag.
+
+`list_resources` supports `title_match` for title-only search and `text_match`
+for title, body, and comment search through GitHub Search.
 
 ## Tests
 

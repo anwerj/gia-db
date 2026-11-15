@@ -94,7 +94,8 @@ Important behavior:
 - `Get` does not load comments. Use paginated `ListSections`.
 - Paged methods return opaque continuation tokens.
 - `List` is the only resource collection/query method. It supports IDs, title
-  matching, state, labels, timestamps, sorting, and pagination.
+  matching, text matching across titles/bodies/comments, state, labels,
+  timestamps, sorting, and pagination.
 - Search-backed `List` calls expose incomplete and 1,000-result truncation
   indicators.
 - The SDK does not retry, pace, or limit concurrency. Throttled responses are returned as `rate_limited` with the GitHub rate-limit details.

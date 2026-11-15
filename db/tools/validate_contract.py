@@ -98,6 +98,9 @@ def evaluate(scenario: dict[str, Any]) -> dict[str, Any]:
     if scenario_id == "list.title_match_incomplete":
         return {"incomplete": value["incomplete_results"]}
 
+    if scenario_id == "list.text_match":
+        return {"search_scope": list(value["scope"])}
+
     if scenario_id == "update.replace_labels":
         return {"labels": list(value["labels"])}
 
