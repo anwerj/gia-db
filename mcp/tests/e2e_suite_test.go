@@ -89,6 +89,8 @@ func (s *E2ESuite) TestRegistration() {
 	s.Contains(byName["get_resource"].InputSchema.Required, "id")
 	_, hasMatch := byName["get_resource"].InputSchema.Properties["if_none_match"]
 	s.True(hasMatch)
+	_, hasTextMatch := byName["list_resources"].InputSchema.Properties["text_match"]
+	s.True(hasTextMatch)
 	s.Contains(byName["new_section"].InputSchema.Required, "resource_id")
 	s.Contains(byName["new_section"].InputSchema.Required, "body")
 	_, hasID := byName["new_section"].InputSchema.Properties["id"]
@@ -102,15 +104,11 @@ func (s *E2ESuite) TestResources() {
 		"get_resource_request", "get_resource_response",
 		"get_resource_missing_request", "get_resource_missing_response",
 		"get_resource_not_modified_request", "get_resource_not_modified_response",
-		"update_resource_get_request", "update_resource_get_response",
 		"update_resource_patch_request", "update_resource_patch_response",
-		"update_resource_empty_get_request", "update_resource_empty_get_response",
 		"update_resource_empty_patch_request", "update_resource_empty_patch_response",
 		"update_resource_missing_request", "update_resource_missing_response",
-		"forget_resource_get_request", "forget_resource_get_response",
 		"forget_resource_patch_request", "forget_resource_patch_response",
 		"forget_resource_missing_request", "forget_resource_missing_response",
-		"reopen_resource_get_request", "reopen_resource_get_response",
 		"reopen_resource_patch_request", "reopen_resource_patch_response",
 		"reopen_resource_missing_request", "reopen_resource_missing_response",
 	)
@@ -209,11 +207,10 @@ func (s *E2ESuite) TestSectionsAndLists() {
 	session := s.session(
 		"list_resources_request", "list_resources_response",
 		"list_resources_search_request", "list_resources_search_response",
+		"list_resources_text_request", "list_resources_text_response",
 		"list_resources_error_request", "list_resources_error_response",
-		"new_section_get_request", "new_section_get_response",
 		"new_section_post_request", "new_section_post_response",
 		"new_section_missing_request", "new_section_missing_response",
-		"list_sections_get_request", "list_sections_get_response",
 		"list_sections_request", "list_sections_response",
 		"list_sections_missing_request", "list_sections_missing_response",
 	)
@@ -244,6 +241,12 @@ func (s *E2ESuite) TestSectionsAndLists() {
 	s.Len(search.Resources, 1)
 	s.Equal(int64(9), search.Resources[0].ID)
 	s.Equal("body", search.Resources[0].Body)
+
+	var text resourcePageDocument
+	decodeSuccess(s.T(), s.call(session, "list_resources", map[string]any{"text_match": "needle"}), &text)
+	s.Len(text.Resources, 1)
+	s.Equal(int64(9), text.Resources[0].ID)
+	s.Equal("needle in body", text.Resources[0].Body)
 
 	auth := decodeError(s.T(), s.call(session, "list_resources", map[string]any{}))
 	s.Equal("authentication", auth.Code)
@@ -352,7 +355,16 @@ func (s *E2ESuite) TestStdio() {
 }
 
 func (s *E2ESuite) TestCLI() {
-	output, code := s.runCLI(nil, nil)
+	output, code := s.runCLI([]string{"--help"}, nil)
+	s.Equal(0, code)
+	s.Contains(output, "Usage of stdio:")
+
+	output, code = s.runCLI([]string{"http", "--help"}, nil)
+	s.Equal(0, code)
+	s.Contains(output, "Usage of http:")
+	s.Contains(output, "-listen")
+
+	output, code = s.runCLI(nil, nil)
 	s.Equal(1, code)
 	s.Contains(output, "GIADB_OWNER is not set; GIADB_REPOSITORY is not set; GIADB_TOKEN or GITHUB_TOKEN is not set")
 

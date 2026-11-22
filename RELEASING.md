@@ -21,7 +21,7 @@ Never move, delete, or reuse a released tag or version. A correction is a new ve
 | Specification and conformance | `db/vX.Y.Z` | `version` in `db/contract/v0.1/manifest.json` | Git tag and GitHub Release. No package registry |
 | Go SDK | `go/vX.Y.Z` | The tag. `go/go.mod` declares the module path, not the version | Go module `github.com/anwerj/gia-db/go` |
 | Python SDK | `py/vX.Y.Z` | `py/pyproject.toml`, when that package exists | PyPI. Not implemented |
-| MCP server | `mcp/vX.Y.Z` | `Version` in `mcp/gia/version.go` | Go binary built from `mcp/`. No release workflow yet |
+| MCP server | `mcp/vX.Y.Z` | `Version` in `mcp/gia/version.go` | Linux amd64 `gia-mcp` binary and GitHub Release |
 | TypeScript SDK | `ts/vX.Y.Z` | `ts/package.json`, when that package exists | npm. Not implemented |
 
 The current spec manifest version is `0.1.0`, so the matching spec tag is `db/v0.1.0`. The tag must match that field exactly. The workflow rejects a mismatch instead of rewriting the manifest.
@@ -43,15 +43,20 @@ Schema `$id` values remain `https://github.com/anwerj/gia-db/contract/v0.1/...`.
 
 ## Registries that are not configured
 
-Python and TypeScript are not published from this repository. There are no `release-py`, `release-mcp`, or `release-ts` workflows yet.
+Python and TypeScript are not published from this repository. There are no
+`release-py` or `release-ts` workflows yet. The MCP workflow builds the binary
+and creates a GitHub Release; it does not publish a Go module.
 
 Before a first PyPI or npm release, a maintainer must check that the package name is available, configure trusted publishing for the exact repository and workflow filename, and use GitHub OIDC (`id-token: write`) on the publish job only. Do not put a long-lived registry token in pull-request workflows. Published Python metadata must not contain a local filesystem path.
 
-`gia-mcp` is not published by a release workflow yet. Before the first MCP release, the published module must require a published `github.com/anwerj/gia-db/go` version. The local `replace` directive must not be the dependency users resolve.
+For the first releases, create `go/v0.0.1` before `mcp/v0.0.1`. Before the MCP
+tag, `mcp/go.mod` must require `github.com/anwerj/gia-db/go v0.0.1` and must
+not contain the local `replace` directive. The MCP workflow builds the binary
+from the tagged commit and creates the GitHub Release.
 
 ## Migration choices recorded here
 
 - The Go SDK was added under `go/` as new files in this repository.
-- `mcp/` is implemented as the Go adapter `gia-mcp`. Its tag pattern is reserved until a release workflow exists.
+- `mcp/` is implemented as the Go adapter `gia-mcp`. Its first release is `mcp/v0.0.1`.
 - `py/` and `ts/` are not implemented. Their tag patterns above are reserved names, not release workflows.
 - `db/SPEC.md` was moved and not edited. The identifiers `gia-db` and `gia-go` in the specification are unchanged. The Go package name remains `gia`.

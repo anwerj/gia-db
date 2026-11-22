@@ -18,6 +18,8 @@ type ListMatchInput struct {
 	PageToken    string
 	Text         string
 	In           string
+	TitleMatch   string
+	TextMatch    string
 	CreatedSince *time.Time
 	UpdatedSince *time.Time
 	State        string
@@ -280,6 +282,12 @@ func buildSearchQuery(owner, repository string, input ListMatchInput) string {
 		if input.In != "" {
 			parts = append(parts, "in:"+input.In)
 		}
+	}
+	if input.TitleMatch != "" {
+		parts = append(parts, strconv.Quote(input.TitleMatch), "in:title")
+	}
+	if input.TextMatch != "" {
+		parts = append(parts, strconv.Quote(input.TextMatch), "in:title,body,comments")
 	}
 	if input.UpdatedSince != nil {
 		parts = append(parts, "updated:>="+input.UpdatedSince.UTC().Format(time.RFC3339))

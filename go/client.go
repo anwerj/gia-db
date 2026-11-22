@@ -79,10 +79,6 @@ func (c *Client) Update(ctx context.Context, id int64, input UpdateInput) (Resou
 	if input.Title == nil && input.Body == nil && input.Labels == nil {
 		return Resource{}, ResponseMeta{}, invalidArgument("update contains no fields")
 	}
-	if _, _, err := c.Get(ctx, id, GetOptions{}); err != nil {
-		return Resource{}, ResponseMeta{}, err
-	}
-
 	var body *string
 	if input.Body != nil {
 		body = input.Body
@@ -105,9 +101,6 @@ func (c *Client) NewSection(ctx context.Context, id int64, body string) (Section
 	if id <= 0 {
 		return Section{}, ResponseMeta{}, invalidArgument("resource ID must be positive")
 	}
-	if _, meta, err := c.Get(ctx, id, GetOptions{}); err != nil {
-		return Section{}, meta, err
-	}
 	comment, meta, err := c.api.AppendComment(ctx, id, body)
 	if err != nil {
 		return Section{}, fromMeta(meta), fromAPIError(err)
@@ -120,9 +113,6 @@ func (c *Client) ListSections(ctx context.Context, id int64, page PageOptions) (
 		return SectionPage{}, invalidArgument("resource ID must be positive")
 	}
 	if err := validatePage(page); err != nil {
-		return SectionPage{}, err
-	}
-	if _, _, err := c.Get(ctx, id, GetOptions{}); err != nil {
 		return SectionPage{}, err
 	}
 	result, err := c.api.ListComments(ctx, id, page.PageSize, page.PageToken)
@@ -161,12 +151,12 @@ func (c *Client) List(ctx context.Context, options ListOptions) (ResourcePage, e
 	switch {
 	case len(options.IDs) != 0:
 		result, err = c.api.ListByIDs(ctx, options.IDs, input)
-	case options.TitleMatch != "" || options.CreatedSince != nil || options.UpdatedSince != nil:
+	case options.TitleMatch != "" || options.TextMatch != "" || options.CreatedSince != nil || options.UpdatedSince != nil:
 		result, err = c.api.ListMatching(ctx, githubapi.ListMatchInput{
 			PageSize:     options.PageSize,
 			PageToken:    options.PageToken,
-			Text:         options.TitleMatch,
-			In:           "title",
+			TitleMatch:   options.TitleMatch,
+			TextMatch:    options.TextMatch,
 			CreatedSince: options.CreatedSince,
 			UpdatedSince: options.UpdatedSince,
 			State:        input.State,
@@ -214,9 +204,6 @@ func (c *Client) Reopen(ctx context.Context, id int64) (Resource, ResponseMeta, 
 func (c *Client) setState(ctx context.Context, id int64, state string) (Resource, ResponseMeta, error) {
 	if id <= 0 {
 		return Resource{}, ResponseMeta{}, invalidArgument("resource ID must be positive")
-	}
-	if _, _, err := c.Get(ctx, id, GetOptions{}); err != nil {
-		return Resource{}, ResponseMeta{}, err
 	}
 	issue, meta, err := c.api.SetState(ctx, id, state)
 	if err != nil {
@@ -366,6 +353,9 @@ func validateList(options ListOptions) error {
 	}
 	if len(options.IDs) != 0 && (options.Sort != "" || options.Direction != "") {
 		return invalidArgument("ID-filtered lists preserve ID order and cannot be sorted")
+	}
+	if len(options.IDs) != 0 && options.TextMatch != "" {
+		return invalidArgument("text matching is not supported with ID-filtered lists")
 	}
 	return nil
 }

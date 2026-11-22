@@ -5,7 +5,7 @@
 //	export GIADB_TEST_REPOSITORY='my-skills-repo'
 //	go run ./tests/live
 //
-// Listens on 127.0.0.1:8080 unless GIADB_TEST_ADDR is set. The process has no
+// Listens on 127.0.0.1:8787 unless GIADB_TEST_ADDR is set. The process has no
 // HTTP authentication. GIADB_TEST_TOKEN is sent only to GitHub.
 package main
 
